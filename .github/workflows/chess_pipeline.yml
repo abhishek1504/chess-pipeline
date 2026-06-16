@@ -1,0 +1,75 @@
+name: Chess Content Pipeline
+
+on:
+  schedule:
+    # 11 PM IST = 5:30 PM UTC
+    - cron: '30 17 * * *'
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y ffmpeg fonts-dejavu
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch today's won games
+        run: python watcher.py
+        env:
+          CHESS_USERNAME: abhi15041984
+
+      - name: Check for games
+        id: check
+        run: |
+          COUNT=$(python -c 'import json; print(len(json.load(open("won_games.json"))))')
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          if [ "$COUNT" -gt "0" ]; then
+            echo "has_games=true" >> $GITHUB_OUTPUT
+            echo "✅ Found $COUNT new wins today!"
+          else
+            echo "has_games=false" >> $GITHUB_OUTPUT
+            echo "😴 No new wins today — pipeline stops here."
+          fi
+
+      - name: Generate videos
+        if: steps.check.outputs.has_games == 'true'
+        run: python step2_generate_video.py
+
+      - name: Generate scripts and metadata
+        if: steps.check.outputs.has_games == 'true'
+        run: python step3_generate_scripts.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Upload to YouTube
+        if: steps.check.outputs.has_games == 'true'
+        run: python step5_upload_youtube.py
+        env:
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+
+      - name: Summary
+        if: steps.check.outputs.has_games == 'true'
+        run: |
+          echo "🏁 Pipeline complete!"
+          echo "Videos generated:"
+          find videos/ -name "landscape.mp4" 2>/dev/null | wc -l
+          echo "Scripts generated:"
+          find videos/ -name "script.txt" 2>/dev/null | wc -l
+          echo "YouTube uploads:"
+          find videos/ -name "youtube_upload.json" 2>/dev/null | wc -l

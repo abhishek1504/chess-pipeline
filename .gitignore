@@ -1,0 +1,17 @@
+client_secrets.json
+youtube_token.pickle
+*.pickle
+won_games.json
+videos/
+scripts/
+sounds/track.aac
+__pycache__/
+*.pyc
+.env
+videos/
+scripts/
+won_games.json
+client_secrets.json
+youtube_token.pickle
+*.pyc
+.DS_Store
