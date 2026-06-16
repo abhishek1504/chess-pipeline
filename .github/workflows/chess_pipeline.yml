@@ -3,7 +3,9 @@ name: Chess Content Pipeline
 on:
   schedule:
     - cron: '30 17 * * *'
-  workflow_dispatch:
+  workflow_dispatch:        # ← already there, manual trigger
+  push:
+    branches: [main]        # ← add this, resets the 60-day timer on every push
 
 jobs:
   generate:
