@@ -80,9 +80,17 @@ def parse_game(game_data):
         "time_ctrl": fmt_time_control(h.get("TimeControl", "")),
     }
 
+    # Walk through moves properly — check capture BEFORE pushing
     board    = game.board()
     moves    = list(game.mainline_moves())
-    captures = sum(1 for m in moves if board.is_capture(m) or (board.push(m) or False))
+    captures = 0
+    for m in moves:
+        try:
+            if board.is_capture(m):
+                captures += 1
+            board.push(m)
+        except Exception:
+            break   # stop on illegal move, still return what we have
 
     return meta, len(moves), captures
 
