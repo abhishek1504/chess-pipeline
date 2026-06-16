@@ -60,18 +60,33 @@ MONTH_NAMES = {
 def get_youtube_client():
     """
     Authenticate and return YouTube API client.
-    - Local: reads youtube_token.pickle
-    - GitHub Actions: reads YOUTUBE_TOKEN env var (base64 encoded pickle)
+    - Local: reads youtube_token.json
+    - GitHub Actions: reads YOUTUBE_TOKEN env var (JSON string, not pickle)
     """
     import base64
     creds = None
 
-    # GitHub Actions — load token from env var
-    token_b64 = os.environ.get("YOUTUBE_TOKEN")
-    if token_b64:
-        creds = pickle.loads(base64.b64decode(token_b64))
+    # GitHub Actions — load token from env var (JSON format)
+    token_env = os.environ.get("YOUTUBE_TOKEN")
+    if token_env:
+        try:
+            # Try JSON first (new format)
+            token_data = json.loads(base64.b64decode(token_env).decode())
+            creds = Credentials.from_authorized_user_info(token_data, SCOPES)
+        except Exception:
+            try:
+                # Fallback: try raw JSON string
+                token_data = json.loads(token_env)
+                creds = Credentials.from_authorized_user_info(token_data, SCOPES)
+            except Exception as e:
+                print(f"❌ Could not parse YOUTUBE_TOKEN: {e}")
+                sys.exit(1)
 
-    # Local — load from pickle file
+    # Local — load from JSON file
+    elif os.path.exists("youtube_token.json"):
+        creds = Credentials.from_authorized_user_file("youtube_token.json", SCOPES)
+
+    # Legacy pickle support
     elif os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE, "rb") as f:
             creds = pickle.load(f)
@@ -80,24 +95,24 @@ def get_youtube_client():
     if creds and creds.expired and creds.refresh_token:
         print("🔄 Refreshing access token...")
         creds.refresh(Request())
-        # Save refreshed token locally if running locally
-        if not token_b64 and os.path.exists(TOKEN_FILE):
-            with open(TOKEN_FILE, "wb") as f:
-                pickle.dump(creds, f)
+        # Save refreshed token
+        if not token_env:
+            with open("youtube_token.json", "w") as f:
+                f.write(creds.to_json())
 
-    # No token found — need to auth
-    if not creds:
-        if not os.path.exists(CLIENT_SECRETS):
-            print(f"❌ No YouTube token found!")
-            print(f"   Run: python youtube_auth.py")
-            sys.exit(1)
-        print("🔑 Opening browser for YouTube authentication...")
-        flow  = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS, SCOPES)
-        creds = flow.run_local_server(port=0)
-        with open(TOKEN_FILE, "wb") as f:
-            pickle.dump(creds, f)
-        print("✅ Token saved! Run: python youtube_auth.py --export")
-        print("   to export for GitHub Actions.")
+    # No token found
+    if not creds or not creds.valid:
+        if not creds:
+            if not os.path.exists(CLIENT_SECRETS):
+                print(f"❌ No YouTube token found!")
+                print(f"   Run: python youtube_auth.py")
+                sys.exit(1)
+            print("🔑 Opening browser for YouTube authentication...")
+            flow  = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS, SCOPES)
+            creds = flow.run_local_server(port=0)
+            with open("youtube_token.json", "w") as f:
+                f.write(creds.to_json())
+            print("✅ Token saved! Run: python youtube_auth.py --export")
 
     return build("youtube", "v3", credentials=creds)
 

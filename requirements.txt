@@ -10,7 +10,7 @@ numpy==1.26.4
 # API calls
 requests==2.31.0
 
-# Google APIs (YouTube)
+# Google APIs (YouTube) — pinned to avoid pickle compatibility issues
 google-auth==2.29.0
 google-auth-oauthlib==1.2.0
 google-auth-httplib2==0.2.0
