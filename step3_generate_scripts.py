@@ -230,6 +230,11 @@ def main():
         print("❌ No games found.")
         sys.exit(1)
 
+    # Respect MAX_UPLOADS — match what step2 generated
+    max_uploads = int(os.environ.get("MAX_UPLOADS", 0))
+    if max_uploads > 0 and len(games) > max_uploads:
+        games = games[:max_uploads]
+
     print(f"📝 Generating metadata for {len(games)} games (no API needed)...\n")
 
     success = 0

@@ -788,6 +788,12 @@ def main():
     if not games:
         print("❌ No games found."); sys.exit(1)
 
+    # Respect MAX_UPLOADS — no point generating more than we can upload
+    max_uploads = int(os.environ.get("MAX_UPLOADS", 0))
+    if max_uploads > 0 and len(games) > max_uploads:
+        print(f"⚙️  MAX_UPLOADS={max_uploads} — limiting to {max_uploads} of {len(games)} games")
+        games = games[:max_uploads]
+
     print(f"🎮 {len(games)} games to process\n")
     print("🖼️  Checking piece images...")
     download_pieces()

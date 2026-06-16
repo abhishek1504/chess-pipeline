@@ -73,11 +73,15 @@ jobs:
       - name: Generate videos
         if: steps.check.outputs.has_games == 'true'
         run: python step2_generate_video.py
+        env:
+          MAX_UPLOADS: ${{ github.event.inputs.max_uploads }}
 
       # ── Step 3: Generate scripts ──────────────────────────────────────────
       - name: Generate scripts and metadata
         if: steps.check.outputs.has_games == 'true'
         run: python step3_generate_scripts.py
+        env:
+          MAX_UPLOADS: ${{ github.event.inputs.max_uploads }}
 
       # ── Step 5: Upload to YouTube ─────────────────────────────────────────
       - name: Upload to YouTube
