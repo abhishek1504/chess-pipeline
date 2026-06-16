@@ -14,7 +14,7 @@ on:
         default: ''
         type: string
       max_uploads:
-        description: 'Max videos to upload to YouTube (YouTube allows ~6/day)'
+        description: 'Max videos to generate AND upload (YouTube allows ~6/day)'
         required: false
         default: '6'
         type: string
@@ -22,7 +22,7 @@ on:
 jobs:
   backfill:
     runs-on: ubuntu-latest
-    timeout-minutes: 360   # 6 hours max for large backfills
+    timeout-minutes: 360
 
     steps:
       - name: Checkout
@@ -42,7 +42,7 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      # ── Step 1: Fetch historical wins ────────────────────────────────────
+      # ── Step 1: Fetch historical wins (limited to max_uploads) ───────────
       - name: Fetch historical wins
         run: |
           if [ -z "${{ github.event.inputs.month }}" ]; then
@@ -52,9 +52,10 @@ jobs:
           fi
         env:
           CHESS_USERNAME: abhi15041984
-          BACKFILL_AUTO: "true"   # skips the confirmation prompt
+          BACKFILL_AUTO:  "true"
+          MAX_UPLOADS:    ${{ github.event.inputs.max_uploads }}
 
-      # ── Check if any games were found ────────────────────────────────────
+      # ── Check for games ───────────────────────────────────────────────────
       - name: Check for games
         id: check
         run: |
@@ -62,13 +63,13 @@ jobs:
           echo "count=$COUNT" >> $GITHUB_OUTPUT
           if [ "$COUNT" -gt "0" ]; then
             echo "has_games=true" >> $GITHUB_OUTPUT
-            echo "✅ Found $COUNT wins to process!"
+            echo "✅ $COUNT wins queued for processing!"
           else
             echo "has_games=false" >> $GITHUB_OUTPUT
-            echo "😴 No wins found for this period."
+            echo "😴 No wins found."
           fi
 
-      # ── Step 2: Generate videos ───────────────────────────────────────────
+      # ── Step 2: Generate videos (only for queued games) ──────────────────
       - name: Generate videos
         if: steps.check.outputs.has_games == 'true'
         run: python step2_generate_video.py
@@ -83,16 +84,13 @@ jobs:
         if: steps.check.outputs.has_games == 'true'
         run: python step5_upload_youtube.py
         env:
-          YOUTUBE_TOKEN:  ${{ secrets.YOUTUBE_TOKEN }}
-          MAX_UPLOADS:    ${{ github.event.inputs.max_uploads }}
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          MAX_UPLOADS:   ${{ github.event.inputs.max_uploads }}
 
-      # ── Summary ───────────────────────────────────────────────────────────
       - name: Summary
         if: steps.check.outputs.has_games == 'true'
         run: |
           echo "🏁 Backfill complete!"
           echo "Period: ${{ github.event.inputs.year }}/${{ github.event.inputs.month }}"
-          echo "Videos generated:"
-          find videos/ -name "portrait.mp4" 2>/dev/null | wc -l
-          echo "YouTube uploads:"
-          find videos/ -name "youtube_upload.json" 2>/dev/null | wc -l
+          echo "Videos generated: $(find videos/ -name 'portrait.mp4' 2>/dev/null | wc -l)"
+          echo "Uploaded: $(find videos/ -name 'youtube_upload.json' 2>/dev/null | wc -l)"
