@@ -118,44 +118,71 @@ def get_youtube_client():
 
 # ── Script parsing ────────────────────────────────────────────────────────────
 
-def extract_section(content, header, next_header=None):
-    """Extract a section from script.txt between header and next_header."""
-    pattern = rf"{re.escape(header)}\n─+\n(.*?)"
-    if next_header:
-        pattern += rf"(?=\n\n{re.escape(next_header)})"
-    else:
-        pattern += r"$"
-    match = re.search(pattern, content, re.DOTALL)
-    return match.group(1).strip() if match else ""
+def extract_section(content, header):
+    """
+    Extract section content from script.txt.
+    Finds the header line, skips the dash line, reads until next section.
+    Robust — works regardless of emoji variations in header names.
+    """
+    lines   = content.split("\n")
+    capture = False
+    result  = []
+
+    for line in lines:
+        # Start capturing after header + dash line
+        if header.lower() in line.lower():
+            capture = True
+            continue
+        if capture and set(line.strip()) <= {"─", "-", "=", " ", ""}:
+            if result:  # dash line after content = end of section
+                break
+            continue   # dash line right after header = skip it
+        if capture:
+            # Stop at next section header (lines with emoji + caps)
+            if any(e in line for e in ["🎬","📋","#️⃣","📱","="*10]):
+                break
+            result.append(line)
+
+    return "\n".join(result).strip()
 
 def parse_script(script_path):
-    """Parse script.txt and extract YouTube metadata."""
+    """Parse script.txt and extract YouTube metadata. Robust to format variations."""
     content = open(script_path, encoding="utf-8").read()
 
-    title = extract_section(content, "🎬 YOUTUBE TITLE",   "📋 YOUTUBE DESCRIPTION")
-    desc  = extract_section(content, "📋 YOUTUBE DESCRIPTION", "#️⃣  YOUTUBE HASHTAGS")
-    tags  = extract_section(content, "#️⃣  YOUTUBE HASHTAGS",  "📱 INSTAGRAM CAPTION")
+    title    = extract_section(content, "YOUTUBE TITLE")
+    desc     = extract_section(content, "YOUTUBE DESCRIPTION")
+    hashtags = extract_section(content, "HASHTAGS")
+    ig_cap   = extract_section(content, "INSTAGRAM CAPTION")
 
-    # Clean title — remove quotes if Claude wrapped it
+    # Clean title
     title = title.strip('"').strip("'").strip()
 
-    # Parse hashtags into list
-    tag_list = re.findall(r'#(\w+)', tags)
-    # Add default tags always
-    for t in ["chess","chesscom","indianthinkingathlete","chessindia","learnchess"]:
-        if t not in tag_list:
+    # If description parsing failed, build from game info in header
+    if not desc or len(desc) < 20:
+        # Pull game info from the header block at top of script
+        lines = content.split("\n")
+        game_info = [l for l in lines[:8] if l.strip() and not l.startswith("=")]
+        desc = "\n".join(game_info)
+
+    # Build full description — desc + hashtags combined
+    full_desc = desc.strip()
+    if hashtags:
+        full_desc += f"\n\n{hashtags.strip()}"
+    full_desc += f"\n\n─────────────────────────"
+    full_desc += f"\n🏃 {CHANNEL_NAME}"
+    full_desc += f"\nSubscribe for weekly chess games, puzzles, and the slow grind of getting better."
+    full_desc += f"\n{'─'*25}"
+
+    # Parse hashtags into tag list for YouTube tags field
+    tag_list = re.findall(r'#(\w+)', hashtags)
+    for t in ["chess","chesscom","indianthinkingathlete","chessindia","learnchess","roadto1000"]:
+        if t.lower() not in [x.lower() for x in tag_list]:
             tag_list.append(t)
 
-    # Build full description with hashtags appended
-    full_desc = desc
-    if tags:
-        full_desc += f"\n\n{tags}"
-    full_desc += f"\n\n─────────────────────────\n🏃 {CHANNEL_NAME}\nSubscribe for weekly chess games, puzzles, and the slow grind of getting better.\n─────────────────────────"
-
     return {
-        "title":       title[:100],   # YouTube title max 100 chars
-        "description": full_desc[:5000],  # YouTube desc max 5000 chars
-        "tags":        tag_list[:500],    # YouTube tags max 500 chars total
+        "title":       title[:100],
+        "description": full_desc[:4900],
+        "tags":        tag_list[:50],
     }
 
 def get_upload_status_file(game_dir):
