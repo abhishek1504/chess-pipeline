@@ -22,6 +22,8 @@ VIDEOS_DIR  = "videos"
 INPUT_FILE  = "won_games.json"
 CHANNEL     = "Indian Thinking Athlete"
 CHANNEL_URL = "@indianthinkingathlete"
+EMAIL       = "thinkingathleteindia@gmail.com"
+INSTAGRAM   = "@indianthinkingathlete"
 MONTH_NAMES = {
     1:"01_January", 2:"02_February", 3:"03_March", 4:"04_April",
     5:"05_May",     6:"06_June",     7:"07_July",  8:"08_August",
@@ -94,25 +96,33 @@ def parse_game(game_data):
 
     return meta, len(moves), captures
 
-def generate_title(game_data, meta, my_rating, opp_name, opp_rating, win_method, move_count):
-    """Generate a punchy YouTube title."""
-    diff     = opp_rating - my_rating
-    opening  = meta.get("opening", "")
-    eco      = meta.get("eco", "")
+def get_game_type(meta):
+    """Return BLITZ or RAPID based on time control."""
+    tc = meta.get("time_ctrl", "")
+    if "Blitz" in tc:   return "BLITZ"
+    if "Bullet" in tc:  return "BULLET"
+    return "RAPID"
 
-    # Pick a title style based on what's interesting about the game
+def generate_title(game_data, meta, my_rating, opp_name, opp_rating, win_method, move_count):
+    """Generate title: Opening | Game Type | Rating | Key moment."""
+    diff      = opp_rating - my_rating
+    opening   = meta.get("opening", "")
+    game_type = get_game_type(meta)
+
+    # Shorten long opening names
+    if opening and len(opening) > 30:
+        opening = opening.split(":")[0].strip()  # e.g. "Sicilian Defense: Najdorf" -> "Sicilian Defense"
+
+    opening_part = f"{opening} | " if opening else ""
+
     if diff >= 100:
-        title = f"I Beat Someone {diff} Points Higher Rated | Road to 1000 ♟️"
-    elif diff <= -100:
-        title = f"Beating a Lower Rated Opponent | {opening or 'Chess Game'} | Road to 1000"
-    elif opening and eco:
-        title = f"{opening} | Road to 1000 | {my_rating} Rated ♟️"
+        title = f"{opening_part}{game_type} | Beat {diff} pts Higher Rated | {my_rating} ♟️"
     elif win_method == "Checkmate":
-        title = f"Checkmate in {move_count} Moves | Road to 1000 | Chess.com ♟️"
+        title = f"{opening_part}{game_type} | Checkmate in {move_count} Moves | {my_rating} ♟️"
     elif move_count <= 20:
-        title = f"Quick Win in {move_count} Moves | Road to 1000 | Chess.com ♟️"
+        title = f"{opening_part}{game_type} | Won in {move_count} Moves | {my_rating} ♟️"
     else:
-        title = f"Road to 1000 | Rated {my_rating} | {win_method} | Chess.com ♟️"
+        title = f"{opening_part}{game_type} | {win_method} | Rated {my_rating} | Road to 1000 ♟️"
 
     return title[:100]
 
@@ -126,10 +136,12 @@ def generate_description(game_data, meta, my_rating, opp_name,
     time_ctrl   = meta.get("time_ctrl", "Rapid")
     opening_str = f"{opening} ({eco})" if opening and eco else opening or "Unknown Opening"
 
+    game_type = get_game_type(meta)
     desc = f"""I am Abhishek — software developer, runner, and a chess player who started at 42.
-Currently rated {my_rating} on chess.com. This is the Road to 1000.
+Currently rated {my_rating} on chess.com. Road to 1000 — one {game_type.lower()} game at a time.
 
 🎮 Game Details:
+• Game type: {game_type}
 • Playing as: {'White' if get_my_side(game_data) == 'white' else 'Black'}
 • Opponent: {opp_name} (rated {opp_rating}) — {diff_str}
 • Opening: {opening_str}
@@ -153,32 +165,77 @@ Not a GM. Not a coach. Just a 42-year-old trying to get better at chess in publi
     return desc[:4900]
 
 def generate_hashtags(meta, my_rating, opp_rating, win_method, opening):
-    """Generate relevant hashtags."""
+    """Generate optimised hashtags for reach."""
+    game_type = get_game_type(meta)
+    tc        = meta.get("time_ctrl", "")
+
+    # Core high-reach chess hashtags
     tags = [
-        "#chess", "#chesscom", "#roadto1000",
-        "#indianthinkingathlete", "#chessindia",
-        "#learnchess", "#chessbeginner",
-        f"#{'rapid' if 'Rapid' in meta.get('time_ctrl','') else 'blitz'}chess",
-        "#chessgame", "#chessvideo",
+        "#chess",
+        "#chesscom",
+        "#chessindia",
+        "#indianchess",
+        "#learnchess",
+        "#chessgame",
     ]
 
-    # Add opening-specific hashtag
-    if opening:
-        opening_tag = "#" + opening.replace(" ", "").replace(":", "").replace("-", "")[:20]
-        tags.append(opening_tag)
+    # Game type specific — high search volume
+    if game_type == "BLITZ":
+        tags += ["#blitzchess", "#blitz", "#blitzgame"]
+    elif game_type == "RAPID":
+        tags += ["#rapidchess", "#rapid", "#rapidgame"]
+    elif game_type == "BULLET":
+        tags += ["#bulletchess", "#bullet"]
 
-    # Add win method tag
+    # Opening specific — niche but targeted
+    if opening:
+        short = opening.split(":")[0].strip()
+        tag   = "#" + short.replace(" ", "").replace("-","").replace("'","")[:22]
+        tags.append(tag)
+        # Also add generic opening tag
+        if "sicilian" in opening.lower():
+            tags.append("#siciliandefense")
+        elif "king" in opening.lower() and "gambit" in opening.lower():
+            tags.append("#kingsgambit")
+        elif "london" in opening.lower():
+            tags.append("#londonsystem")
+        elif "italian" in opening.lower():
+            tags.append("#italiangame")
+        elif "french" in opening.lower():
+            tags.append("#frenchdefense")
+        elif "caro" in opening.lower():
+            tags.append("#carokann")
+        elif "queen" in opening.lower() and "gambit" in opening.lower():
+            tags.append("#queensgambit")
+        elif "ruy" in opening.lower() or "lopez" in opening.lower():
+            tags.append("#ruylopez")
+
+    # Win method
     if win_method == "Checkmate":
-        tags.append("#checkmate")
+        tags += ["#checkmate", "#chessmating"]
     elif win_method == "Resignation":
         tags.append("#resignation")
 
-    # Rating journey tags
+    # Rating journey — community hashtags with good reach
+    tags += ["#roadto1000", "#chessimprovement", "#chessbeginners"]
     if my_rating < 1000:
-        tags.append("#sub1000chess")
-    tags.append("#chessimprovement")
+        tags += ["#under1000", "#800rating"]
 
-    return " ".join(tags[:15])
+    # Brand
+    tags += ["#indianthinkingathlete", "#thinkingathlete"]
+
+    # Music recommendation in script (not a hashtag)
+    return " ".join(tags[:20])
+
+def get_music_suggestion(meta, move_count, win_method):
+    """Suggest background music from YouTube Audio Library."""
+    game_type = get_game_type(meta)
+    if game_type == "BULLET" or move_count < 20:
+        return "🎵 Music suggestion: Search 'upbeat electronic' in YouTube Audio Library"
+    elif win_method == "Checkmate":
+        return "🎵 Music suggestion: Search 'dramatic cinematic' in YouTube Audio Library"
+    else:
+        return "🎵 Music suggestion: Search 'calm piano focus' in YouTube Audio Library"
 
 def save_script(game_dir, title, description, hashtags, game_data, meta,
                 my_rating, opp_name, opp_rating, win_method, move_count, date_str):
@@ -187,6 +244,7 @@ def save_script(game_dir, title, description, hashtags, game_data, meta,
     opening = meta.get("opening", "Unknown")
     eco     = meta.get("eco", "")
 
+    music_tip = get_music_suggestion(meta, move_count, win_method)
     content = f"""{"="*65}
 GAME: {game_data['white']['username']} vs {game_data['black']['username']}
 Date: {date_str}  |  My Rating: {my_rating}  |  Opponent: {opp_rating}
@@ -204,6 +262,8 @@ Opening: {opening} ({eco})  |  Won by: {win_method}  |  Moves: {move_count}
 #️⃣  HASHTAGS (add to description or first comment)
 {"─"*40}
 {hashtags}
+
+{music_tip}
 
 📱 INSTAGRAM CAPTION
 {"─"*40}
@@ -267,6 +327,7 @@ def main():
                                                opp_rating, win_method, move_count, date_str)
             hashtags    = generate_hashtags(meta, my_rating, opp_rating,
                                             win_method, meta.get("opening",""))
+            music_tip   = get_music_suggestion(meta, move_count, win_method)
 
             save_script(game_dir, title, description, hashtags, gd, meta,
                         my_rating, opp_name, opp_rating, win_method, move_count, date_str)
