@@ -122,6 +122,51 @@ def main():
     if len(all_wins) > 10:
         print(f"  ... and {len(all_wins)-10} more")
 
+    # Filter out games already uploaded — check for youtube_upload.json
+    VIDEOS_DIR  = "videos"
+    MONTH_NAMES = {
+        1:"01_January", 2:"02_February", 3:"03_March", 4:"04_April",
+        5:"05_May",     6:"06_June",     7:"07_July",  8:"08_August",
+        9:"09_September",10:"10_October",11:"11_November",12:"12_December"
+    }
+
+    def already_done(game, idx):
+        """Check if this game already has a youtube_upload.json."""
+        dt       = datetime.fromtimestamp(game.get("end_time", 0))
+        white    = game["white"]["username"]
+        black    = game["black"]["username"]
+        game_dir = os.path.join(VIDEOS_DIR, str(dt.year), MONTH_NAMES[dt.month],
+                                f"game_{idx:03d}_{white}_vs_{black}")
+        return os.path.exists(os.path.join(game_dir, "youtube_upload.json"))
+
+    # Check against full list with original indices
+    unprocessed = []
+    skipped_done = 0
+    for i, g in enumerate(all_wins):
+        if already_done(g, i+1):
+            skipped_done += 1
+        else:
+            unprocessed.append((i+1, g))
+
+    if skipped_done:
+        print(f"\n⏭️  Skipping {skipped_done} games already uploaded to YouTube")
+
+    if not unprocessed:
+        print("✅ All games for this period already uploaded! Nothing to do.")
+        json.dump([], open(OUTPUT_FILE, "w"))
+        return
+
+    print(f"📋 {len(unprocessed)} games not yet uploaded")
+
+    # Limit to MAX_UPLOADS
+    max_uploads = int(os.environ.get("MAX_UPLOADS", 0))
+    if max_uploads > 0 and len(unprocessed) > max_uploads:
+        print(f"⚙️  Taking next {max_uploads} of {len(unprocessed)} unprocessed games")
+        unprocessed = unprocessed[:max_uploads]
+
+    # Rebuild all_wins with correct original indices preserved
+    all_wins = [g for _, g in unprocessed]
+
     # Skip confirmation if running in GitHub Actions
     auto_mode = os.environ.get("BACKFILL_AUTO", "false").lower() == "true"
     if not auto_mode:
