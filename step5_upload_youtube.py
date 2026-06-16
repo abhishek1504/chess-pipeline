@@ -267,10 +267,8 @@ def main():
 
     ready = []
     for g in game_folders:
-        # Prefer landscape_final.mp4 (with audio) else landscape.mp4
-        vid = os.path.join(g, "landscape_final.mp4")
-        if not os.path.exists(vid):
-            vid = os.path.join(g, "landscape.mp4")
+        # Upload portrait only (for YouTube Shorts / vertical video)
+        vid = os.path.join(g, "portrait.mp4")
         scr = os.path.join(g, "script.txt")
         if os.path.exists(vid) and os.path.exists(scr):
             ready.append((g, vid))
