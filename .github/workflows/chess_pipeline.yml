@@ -2,7 +2,6 @@ name: Chess Content Pipeline
 
 on:
   schedule:
-    # 11 PM IST = 5:30 PM UTC
     - cron: '30 17 * * *'
   workflow_dispatch:
 
@@ -54,8 +53,6 @@ jobs:
       - name: Generate scripts and metadata
         if: steps.check.outputs.has_games == 'true'
         run: python step3_generate_scripts.py
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Upload to YouTube
         if: steps.check.outputs.has_games == 'true'

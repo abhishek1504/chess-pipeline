@@ -1,54 +1,43 @@
 """
-STEP 3 — Generate Per-Move Commentary + YouTube/Instagram Metadata
+STEP 3 — Generate YouTube Metadata (No AI needed)
 The Thinking Athlete Pipeline
 
-Generates:
-  - commentary.json  — per-move commentary for synced TTS in step4
-  - script.txt       — full voiceover + YT title + description + hashtags
+Generates title, description and hashtags for each game
+directly from chess.com game data. No API calls needed.
 
-Style: Sagar Shah / ChessBase India energy — commentary only on key moments,
-opening named and explained, silence on normal moves, depth on interesting ones.
-
-Requirements:
-    pip install anthropic chess
-    export ANTHROPIC_API_KEY="your-key-here"
+Requirements: chess (already installed)
 """
 
 import json
 import os
 import sys
-import re
 import chess
 import chess.pgn
 import io
 from datetime import datetime
 
-try:
-    import anthropic
-except ImportError:
-    print("❌ Run: pip install anthropic")
-    sys.exit(1)
-
+# ── Config ────────────────────────────────────────────────────────────────────
 USERNAME    = "abhi15041984"
 VIDEOS_DIR  = "videos"
 INPUT_FILE  = "won_games.json"
+CHANNEL     = "Indian Thinking Athlete"
+CHANNEL_URL = "@indianthinkingathlete"
 MONTH_NAMES = {
     1:"01_January", 2:"02_February", 3:"03_March", 4:"04_April",
     5:"05_May",     6:"06_June",     7:"07_July",  8:"08_August",
     9:"09_September",10:"10_October",11:"11_November",12:"12_December"
 }
-
-client = anthropic.Anthropic()
+# ─────────────────────────────────────────────────────────────────────────────
 
 def get_my_side(game_data):
     return "white" if game_data["white"]["username"].lower() == USERNAME.lower() else "black"
 
 def get_game_dir(game_data, index):
-    dt        = datetime.fromtimestamp(game_data.get("end_time", 0))
-    white     = game_data["white"]["username"]
-    black     = game_data["black"]["username"]
-    game_dir  = os.path.join(VIDEOS_DIR, str(dt.year), MONTH_NAMES[dt.month],
-                             f"game_{index:03d}_{white}_vs_{black}")
+    dt       = datetime.fromtimestamp(game_data.get("end_time", 0))
+    white    = game_data["white"]["username"]
+    black    = game_data["black"]["username"]
+    game_dir = os.path.join(VIDEOS_DIR, str(dt.year), MONTH_NAMES[dt.month],
+                            f"game_{index:03d}_{white}_vs_{black}")
     os.makedirs(game_dir, exist_ok=True)
     return game_dir
 
@@ -62,332 +51,164 @@ def fmt_time_control(tc):
         return f"{mins} min{f'+{inc}' if inc else ''} {label}"
     except: return tc
 
-def analyse_game(game_data):
-    """
-    Extract full move list with annotations for key moments.
-    Returns (moves_info, meta) where moves_info is a list of dicts per half-move.
-    """
-    pgn_text = game_data.get("pgn", "")
-    if not pgn_text: return [], {}
-
-    game = chess.pgn.read_game(io.StringIO(pgn_text))
-    if not game: return [], {}
-
-    side      = get_my_side(game_data)
-    my_color  = chess.WHITE if side == "white" else chess.BLACK
-    h         = game.headers
-    opp_side  = "black" if side == "white" else "white"
-
-    meta = {
-        "opening":      h.get("Opening", ""),
-        "eco":          h.get("ECO", ""),
-        "time_ctrl":    fmt_time_control(h.get("TimeControl", "")),
-        "my_name":      game_data[side]["username"],
-        "opp_name":     game_data[opp_side]["username"],
-        "my_rating":    game_data[side]["rating"],
-        "opp_rating":   game_data[opp_side]["rating"],
-        "my_side":      side,
-        "win_method":   game_data[opp_side]["result"],
-        "date":         datetime.fromtimestamp(game_data["end_time"]).strftime("%B %d, %Y"),
-    }
-
-    piece_values = {chess.PAWN:1, chess.KNIGHT:3, chess.BISHOP:3,
-                    chess.ROOK:5, chess.QUEEN:9, chess.KING:0}
-
-    board      = game.board()
-    all_moves  = list(game.mainline_moves())
-    moves_info = []
-
-    for i, move in enumerate(all_moves):
-        is_my    = (board.turn == my_color)
-        move_num = (i // 2) + 1
-        san      = board.san(move)
-
-        # Classify move
-        is_capture  = board.is_capture(move)
-        is_castle   = board.is_castling(move)
-        is_promote  = move.promotion is not None
-        cap_val     = 0
-        if is_capture:
-            cap_piece = board.piece_at(move.to_square)
-            if cap_piece:
-                cap_val = piece_values.get(cap_piece.piece_type, 0)
-
-        board_after = board.copy()
-        board_after.push(move)
-        is_check    = board_after.is_check()
-        is_checkmate= board_after.is_checkmate()
-
-        # Determine if this is a KEY moment (worth commenting on)
-        is_key = (
-            i < 6 or                    # Opening moves
-            is_castle or
-            is_promote or
-            is_checkmate or
-            (is_capture and cap_val >= 3) or  # Takes a minor piece or better
-            (is_check and i > 10) or    # Checks in middlegame/endgame
-            (is_my and cap_val >= 5)    # I take a rook or queen
-        )
-
-        moves_info.append({
-            "half_move":    i + 1,
-            "move_num":     move_num,
-            "san":          san,
-            "is_my":        is_my,
-            "is_key":       is_key,
-            "is_capture":   is_capture,
-            "is_castle":    is_castle,
-            "is_promote":   is_promote,
-            "is_check":     is_check,
-            "is_checkmate": is_checkmate,
-            "cap_val":      cap_val,
-            "is_opening":   i < 6,
-        })
-        board.push(move)
-
-    return moves_info, meta
-
-def build_move_sequence_for_claude(moves_info, meta):
-    """Build a readable move sequence string with key moment markers."""
-    lines = []
-    i = 0
-    while i < len(moves_info):
-        w = moves_info[i]
-        b = moves_info[i+1] if i+1 < len(moves_info) else None
-
-        w_ann = ""
-        if w["is_castle"]:   w_ann = "[CASTLE]"
-        elif w["is_promote"]: w_ann = "[PROMOTION]"
-        elif w["is_checkmate"]: w_ann = "[CHECKMATE]"
-        elif w["is_check"]:  w_ann = "[CHECK]"
-        elif w["cap_val"] >= 5: w_ann = f"[TAKES ROOK/QUEEN]"
-        elif w["cap_val"] >= 3: w_ann = f"[TAKES PIECE]"
-        elif w["is_opening"]: w_ann = "[OPENING]"
-
-        b_san = b["san"] if b else ""
-        b_ann = ""
-        if b:
-            if b["is_castle"]:    b_ann = "[CASTLE]"
-            elif b["is_promote"]: b_ann = "[PROMOTION]"
-            elif b["is_checkmate"]: b_ann = "[CHECKMATE]"
-            elif b["is_check"]:   b_ann = "[CHECK]"
-            elif b["cap_val"] >= 5: b_ann = f"[TAKES ROOK/QUEEN]"
-            elif b["cap_val"] >= 3: b_ann = f"[TAKES PIECE]"
-            elif b["is_opening"]:  b_ann = "[OPENING]"
-
-        line = f"{w['move_num']}. {w['san']} {w_ann}  {b_san} {b_ann}"
-        lines.append(line.strip())
-        i += 2
-
-    return "\n".join(lines)
-
-def generate_commentary(moves_info, meta):
-    """
-    Ask Claude to generate per-move commentary for key moments only.
-    Returns a list of {half_move, commentary} dicts.
-    """
-    key_moves   = [m for m in moves_info if m["is_key"]]
-    move_seq    = build_move_sequence_for_claude(moves_info, meta)
-    total_moves = len(moves_info)
-    diff        = meta["opp_rating"] - meta["my_rating"]
-    diff_str    = f"{abs(diff)} points {'higher' if diff > 0 else 'lower'} rated"
-
-    prompt = f"""You are writing chess commentary for Abhishek's YouTube channel "The Thinking Athlete".
-
-STYLE: Sagar Shah / ChessBase India energy. Commentary only on interesting moments.
-Calm, analytical, warm. Self-deprecating when Abhishek makes a dubious move.
-Excited (but not over the top) on brilliant moments. Plain English, no jargon.
-Abhishek's rating: {meta['my_rating']} — he references this for comic effect.
-
-GAME:
-- Abhishek ({meta['my_side']}, rated {meta['my_rating']}) vs {meta['opp_name']} ({meta['opp_rating']}) — {diff_str}
-- Opening: {meta['opening']} ({meta['eco']})
-- Time control: {meta['time_ctrl']}
-- Won by: {meta['win_method']}
-- Total moves: {total_moves}
-
-FULL MOVE SEQUENCE (annotated):
-{move_seq}
-
-KEY MOVES TO COMMENT ON (half-move numbers):
-{', '.join(str(m['half_move']) for m in key_moves)}
-
-YOUR TASK:
-Generate commentary ONLY for the key moments listed above.
-Return a JSON array. Each element:
-{{
-  "half_move": <number>,   // which half-move this commentary is for
-  "commentary": "<text>",  // what Abhishek says out loud (1-3 sentences max)
-  "hold_seconds": <number> // how long to hold this frame (2-5 seconds)
-}}
-
-RULES:
-- Opening moves (half_move 1-6): name the opening, explain it simply in 1-2 sentences
-  e.g. "This is the Sicilian Defense — black is saying I want a complex fight for the center"
-- Normal captures of minor pieces: 1 short punchy line
-  e.g. "I take the bishop here — free piece, thank you very much"
-- Big captures (rook/queen): 2-3 sentences, build the drama
-  e.g. "Now look at this. The queen is completely undefended. I play Bxq... and just like that,
-  I'm up a queen. I genuinely did not see this coming three moves ago."
-- Checks: short, building tension
-  e.g. "Check. King has to move."
-- Castling: brief
-  e.g. "I castle here — king safety first"
-- Checkmate/resignation: satisfying conclusion, 2-3 sentences
-  e.g. "And that's checkmate. The king has nowhere to go.
-  This is what 946 rated chess looks like on a good day."
-- Add ONE funny self-deprecating line somewhere in the middlegame
-- Do NOT comment on boring moves
-
-Also add TWO special entries:
-1. half_move: 0  — the intro (before move 1)
-   Commentary: Hook opener. Funny, references rating, sets up the matchup.
-   hold_seconds: 4
-2. half_move: 99999 — the outro (after last move)
-   Commentary: Wrap up, subscribe CTA in his style.
-   hold_seconds: 5
-
-Return ONLY valid JSON array. No markdown, no explanation."""
-
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2000,
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    raw = response.content[0].text.strip()
-    # Strip markdown fences if present
-    raw = re.sub(r'^```json\s*', '', raw)
-    raw = re.sub(r'^```\s*', '', raw)
-    raw = re.sub(r'\s*```$', '', raw)
-
-    try:
-        commentary = json.loads(raw)
-        return commentary
-    except json.JSONDecodeError as e:
-        print(f"  ⚠️  JSON parse error: {e}")
-        print(f"  Raw response: {raw[:300]}")
-        return []
-
-def generate_metadata(moves_info, meta):
-    """Generate YouTube title, description, hashtags, Instagram caption."""
-    diff     = meta["opp_rating"] - meta["my_rating"]
-    diff_str = f"{abs(diff)} points {'higher' if diff > 0 else 'lower'} rated"
-
-    prompt = f"""Write YouTube and Instagram metadata for Abhishek's chess video.
-
-Style: self-deprecating, deadpan, funny. "The Thinking Athlete" brand.
-Rating: {meta['my_rating']}. Won by {meta['win_method']} vs {meta['opp_name']} ({meta['opp_rating']}) — {diff_str}.
-Opening: {meta['opening']} ({meta['eco']}). Time: {meta['time_ctrl']}. Date: {meta['date']}.
-
-Generate using EXACT section headers:
-
-===YOUTUBE TITLE===
-Max 70 chars. Punchy, funny, references opening or rating.
-
-===YOUTUBE DESCRIPTION===
-3-4 paragraphs. Hook, opening explained simply, key moment, subscribe CTA. His voice throughout.
-
-===YOUTUBE HASHTAGS===
-12 hashtags. Opening-specific + chess general + india + brand + rating journey.
-
-===INSTAGRAM CAPTION===
-4-5 lines max. Punchy. Ends with a question.
-
-===INSTAGRAM HASHTAGS===
-10 hashtags for Reels reach.
-
-Return only the content. No meta-commentary."""
-
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=1000,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.content[0].text.strip()
-
-def parse_metadata_sections(raw):
-    sections = {"yt_title":"", "yt_desc":"", "yt_tags":"", "ig_caption":"", "ig_tags":""}
-    markers  = {
-        "===YOUTUBE TITLE===":       "yt_title",
-        "===YOUTUBE DESCRIPTION===": "yt_desc",
-        "===YOUTUBE HASHTAGS===":    "yt_tags",
-        "===INSTAGRAM CAPTION===":   "ig_caption",
-        "===INSTAGRAM HASHTAGS===":  "ig_tags",
-    }
-    current = None
-    for line in raw.split("\n"):
-        if line.strip() in markers:
-            current = markers[line.strip()]; continue
-        if current:
-            sections[current] += line + "\n"
-    for k in sections:
-        sections[k] = sections[k].strip()
-    return sections
-
-def save_outputs(game_dir, index, game_data, meta, commentary, sections):
-    """Save commentary.json and script.txt into game folder."""
-
-    # Save commentary JSON for step4
-    commentary_path = os.path.join(game_dir, "commentary.json")
-    with open(commentary_path, "w") as f:
-        json.dump({
-            "meta":       meta,
-            "commentary": commentary,
-        }, f, indent=2)
-
-    # Save script.txt with everything
+def get_win_method(game_data):
     side     = get_my_side(game_data)
     opp_side = "black" if side == "white" else "white"
-    white    = game_data["white"]["username"]
-    black    = game_data["black"]["username"]
-    dt       = datetime.fromtimestamp(game_data.get("end_time", 0)).strftime("%Y-%m-%d")
+    result   = game_data[opp_side]["result"]
+    methods  = {
+        "checkmated": "Checkmate",
+        "resigned":   "Resignation",
+        "timeout":    "On Time",
+        "stalemate":  "Stalemate",
+    }
+    return methods.get(result, "Resignation")
 
-    out = []
-    out.append("=" * 65)
-    out.append(f"GAME {index:03d}: {white} vs {black}")
-    out.append(f"Date: {dt}  |  My Rating: {meta['my_rating']}  |  Opponent: {meta['opp_rating']}")
-    out.append(f"Opening: {meta['opening']} ({meta['eco']})  |  Won by: {meta['win_method']}")
-    out.append("=" * 65)
+def parse_game(game_data):
+    """Extract opening, move count, captures from PGN."""
+    pgn  = game_data.get("pgn", "")
+    if not pgn:
+        return {}, 0, 0
 
-    out.append("\n📹 MOVE-BY-MOVE COMMENTARY (synced to video)")
-    out.append("─" * 40)
-    for c in sorted(commentary, key=lambda x: x["half_move"]):
-        if c["half_move"] == 0:
-            out.append(f"\n[INTRO — hold {c['hold_seconds']}s]")
-        elif c["half_move"] == 99999:
-            out.append(f"\n[OUTRO — hold {c['hold_seconds']}s]")
-        else:
-            move_idx = c["half_move"] - 1
-            move_num = (move_idx // 2) + 1
-            whose    = "Abhishek" if (move_idx % 2 == 0 and side == "white") or \
-                                     (move_idx % 2 == 1 and side == "black") else meta["opp_name"]
-            out.append(f"\n[Move {move_num} — {whose} — hold {c['hold_seconds']}s]")
-        out.append(c["commentary"])
+    game = chess.pgn.read_game(io.StringIO(pgn))
+    if not game:
+        return {}, 0, 0
 
-    out.append("\n\n🎬 YOUTUBE TITLE")
-    out.append("─" * 40)
-    out.append(sections["yt_title"])
+    h = game.headers
+    meta = {
+        "opening":   h.get("Opening", ""),
+        "eco":       h.get("ECO", ""),
+        "time_ctrl": fmt_time_control(h.get("TimeControl", "")),
+    }
 
-    out.append("\n\n📋 YOUTUBE DESCRIPTION")
-    out.append("─" * 40)
-    out.append(sections["yt_desc"])
+    board    = game.board()
+    moves    = list(game.mainline_moves())
+    captures = sum(1 for m in moves if board.is_capture(m) or (board.push(m) or False))
 
-    out.append("\n\n#️⃣  YOUTUBE HASHTAGS")
-    out.append("─" * 40)
-    out.append(sections["yt_tags"])
+    return meta, len(moves), captures
 
-    out.append("\n\n📱 INSTAGRAM CAPTION")
-    out.append("─" * 40)
-    out.append(sections["ig_caption"])
+def generate_title(game_data, meta, my_rating, opp_name, opp_rating, win_method, move_count):
+    """Generate a punchy YouTube title."""
+    diff     = opp_rating - my_rating
+    opening  = meta.get("opening", "")
+    eco      = meta.get("eco", "")
 
-    out.append("\n\n#️⃣  INSTAGRAM HASHTAGS")
-    out.append("─" * 40)
-    out.append(sections["ig_tags"])
+    # Pick a title style based on what's interesting about the game
+    if diff >= 100:
+        title = f"I Beat Someone {diff} Points Higher Rated | Road to 1000 ♟️"
+    elif diff <= -100:
+        title = f"Beating a Lower Rated Opponent | {opening or 'Chess Game'} | Road to 1000"
+    elif opening and eco:
+        title = f"{opening} | Road to 1000 | {my_rating} Rated ♟️"
+    elif win_method == "Checkmate":
+        title = f"Checkmate in {move_count} Moves | Road to 1000 | Chess.com ♟️"
+    elif move_count <= 20:
+        title = f"Quick Win in {move_count} Moves | Road to 1000 | Chess.com ♟️"
+    else:
+        title = f"Road to 1000 | Rated {my_rating} | {win_method} | Chess.com ♟️"
 
-    script_path = os.path.join(game_dir, "script.txt")
-    with open(script_path, "w") as f:
-        f.write("\n".join(out))
+    return title[:100]
+
+def generate_description(game_data, meta, my_rating, opp_name,
+                         opp_rating, win_method, move_count, date_str):
+    """Generate YouTube description."""
+    diff        = opp_rating - my_rating
+    diff_str    = f"{abs(diff)} points {'higher' if diff > 0 else 'lower'} rated"
+    opening     = meta.get("opening", "")
+    eco         = meta.get("eco", "")
+    time_ctrl   = meta.get("time_ctrl", "Rapid")
+    opening_str = f"{opening} ({eco})" if opening and eco else opening or "Unknown Opening"
+
+    desc = f"""I am Abhishek — software developer, runner, and a chess player who started at 42.
+Currently rated {my_rating} on chess.com. This is the Road to 1000.
+
+🎮 Game Details:
+• Playing as: {'White' if get_my_side(game_data) == 'white' else 'Black'}
+• Opponent: {opp_name} (rated {opp_rating}) — {diff_str}
+• Opening: {opening_str}
+• Time Control: {time_ctrl}
+• Result: Won by {win_method} in {move_count} moves
+• Date: {date_str}
+
+♟️ Every game on this channel is a real game — wins, losses, blunders and all.
+Not a GM. Not a coach. Just a 42-year-old trying to get better at chess in public.
+
+📌 Subscribe for weekly chess games, puzzles, and the slow grind of improvement.
+👍 Like if you enjoyed the game
+🔔 Hit the bell so you don't miss new uploads
+
+{CHANNEL_URL} | chess.com: {USERNAME}
+
+─────────────────────────
+🏃 {CHANNEL} — Chess. Discipline. The slow grind of getting better.
+─────────────────────────"""
+
+    return desc[:4900]
+
+def generate_hashtags(meta, my_rating, opp_rating, win_method, opening):
+    """Generate relevant hashtags."""
+    tags = [
+        "#chess", "#chesscom", "#roadto1000",
+        "#indianthinkingathlete", "#chessindia",
+        "#learnchess", "#chessbeginner",
+        f"#{'rapid' if 'Rapid' in meta.get('time_ctrl','') else 'blitz'}chess",
+        "#chessgame", "#chessvideo",
+    ]
+
+    # Add opening-specific hashtag
+    if opening:
+        opening_tag = "#" + opening.replace(" ", "").replace(":", "").replace("-", "")[:20]
+        tags.append(opening_tag)
+
+    # Add win method tag
+    if win_method == "Checkmate":
+        tags.append("#checkmate")
+    elif win_method == "Resignation":
+        tags.append("#resignation")
+
+    # Rating journey tags
+    if my_rating < 1000:
+        tags.append("#sub1000chess")
+    tags.append("#chessimprovement")
+
+    return " ".join(tags[:15])
+
+def save_script(game_dir, title, description, hashtags, game_data, meta,
+                my_rating, opp_name, opp_rating, win_method, move_count, date_str):
+    """Save script.txt with all YouTube metadata."""
+    side    = get_my_side(game_data)
+    opening = meta.get("opening", "Unknown")
+    eco     = meta.get("eco", "")
+
+    content = f"""{"="*65}
+GAME: {game_data['white']['username']} vs {game_data['black']['username']}
+Date: {date_str}  |  My Rating: {my_rating}  |  Opponent: {opp_rating}
+Opening: {opening} ({eco})  |  Won by: {win_method}  |  Moves: {move_count}
+{"="*65}
+
+🎬 YOUTUBE TITLE
+{"─"*40}
+{title}
+
+📋 YOUTUBE DESCRIPTION
+{"─"*40}
+{description}
+
+#️⃣  HASHTAGS (add to description or first comment)
+{"─"*40}
+{hashtags}
+
+📱 INSTAGRAM CAPTION
+{"─"*40}
+Rated {my_rating} on chess.com. Played the {opening or 'game'} today.
+Won by {win_method.lower()} in {move_count} moves vs {opp_name} ({opp_rating}).
+Road to 1000 — one game at a time. ♟️
+
+What would you have played differently? Drop it in the comments 👇
+
+{hashtags}
+"""
+    with open(os.path.join(game_dir, "script.txt"), "w") as f:
+        f.write(content)
 
 def main():
     if not os.path.exists(INPUT_FILE):
@@ -398,50 +219,53 @@ def main():
         games = json.load(f)
 
     if not games:
-        print("❌ No games found."); sys.exit(1)
+        print("❌ No games found.")
+        sys.exit(1)
 
-    print(f"📝 Generating synced commentary for {len(games)} games...\n")
+    print(f"📝 Generating metadata for {len(games)} games (no API needed)...\n")
 
     success = 0
     for i, gd in enumerate(games):
         white    = gd["white"]["username"]
         black    = gd["black"]["username"]
-        dt       = datetime.fromtimestamp(gd.get("end_time", 0)).strftime("%Y-%m-%d")
+        dt       = datetime.fromtimestamp(gd.get("end_time", 0))
+        date_str = dt.strftime("%B %d, %Y")
         game_dir = get_game_dir(gd, i+1)
 
-        print(f"[{i+1:03d}/{len(games)}] {white} vs {black} | {dt}")
+        print(f"[{i+1:03d}/{len(games)}] {white} vs {black} | {dt.strftime('%Y-%m-%d')}")
 
-        if os.path.exists(os.path.join(game_dir, "commentary.json")) and \
-           os.path.exists(os.path.join(game_dir, "script.txt")):
+        if os.path.exists(os.path.join(game_dir, "script.txt")):
             print(f"  ⏭️  Already exists, skipping.")
             success += 1
             continue
 
         try:
-            moves_info, meta = analyse_game(gd)
-            if not moves_info:
-                print(f"  ⚠️  No moves found, skipping."); continue
+            side       = get_my_side(gd)
+            opp_side   = "black" if side == "white" else "white"
+            my_rating  = gd[side]["rating"]
+            opp_name   = gd[opp_side]["username"]
+            opp_rating = gd[opp_side]["rating"]
+            win_method = get_win_method(gd)
+            meta, move_count, captures = parse_game(gd)
 
-            key_count = sum(1 for m in moves_info if m["is_key"])
-            print(f"  ♟️  {len(moves_info)} moves | {key_count} key moments | {meta['opening']}")
+            title       = generate_title(gd, meta, my_rating, opp_name,
+                                         opp_rating, win_method, move_count)
+            description = generate_description(gd, meta, my_rating, opp_name,
+                                               opp_rating, win_method, move_count, date_str)
+            hashtags    = generate_hashtags(meta, my_rating, opp_rating,
+                                            win_method, meta.get("opening",""))
 
-            print(f"  🤖 Generating commentary...")
-            commentary = generate_commentary(moves_info, meta)
-            print(f"  🤖 Generating metadata...")
-            metadata_raw = generate_metadata(moves_info, meta)
-            sections     = parse_metadata_sections(metadata_raw)
+            save_script(game_dir, title, description, hashtags, gd, meta,
+                        my_rating, opp_name, opp_rating, win_method, move_count, date_str)
 
-            save_outputs(game_dir, i+1, gd, meta, commentary, sections)
-            print(f"  ✅ commentary.json + script.txt saved")
-            print(f"  📌 Title: {sections['yt_title'][:70]}")
+            print(f"  ✅ Title: {title[:65]}")
             success += 1
 
         except Exception as e:
             print(f"  ❌ Error: {e}")
-            import traceback; traceback.print_exc()
 
-    print(f"\n🏁 Done! {success}/{len(games)} games processed.")
-    print(f"📂 Files saved in each game folder in {os.path.abspath(VIDEOS_DIR)}/")
+    print(f"\n🏁 Done! {success}/{len(games)} scripts generated.")
+    print(f"📂 script.txt saved in each game folder under {VIDEOS_DIR}/")
 
 if __name__ == "__main__":
     main()
