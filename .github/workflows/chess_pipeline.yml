@@ -3,9 +3,7 @@ name: Chess Content Pipeline
 on:
   schedule:
     - cron: '30 17 * * *'
-  workflow_dispatch:        # ← already there, manual trigger
-  push:
-    branches: [main]        # ← add this, resets the 60-day timer on every push
+  workflow_dispatch:
 
 jobs:
   generate:
@@ -60,7 +58,9 @@ jobs:
         if: steps.check.outputs.has_games == 'true'
         run: python step5_upload_youtube.py
         env:
-          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          YOUTUBE_TOKEN:    ${{ secrets.YOUTUBE_TOKEN }}
+          PLAYLIST_BLITZ:  ${{ secrets.PLAYLIST_BLITZ }}
+          PLAYLIST_RAPID:  ${{ secrets.PLAYLIST_RAPID }}
 
       - name: Summary
         if: steps.check.outputs.has_games == 'true'

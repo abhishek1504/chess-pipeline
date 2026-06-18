@@ -468,6 +468,132 @@ def draw_move_list(draw, pairs, cur_idx, px, py, pw, max_h, fonts):
             bf = fonts["sm_bold"] if (iscur and not iswh) else fonts["sm"]
             draw.text((px+cnw+cww, y), bs, fill=bc, font=bf)
 
+
+# ── Like / Share / Subscribe / Comment bar ────────────────────────────────────
+
+def draw_lssc_bar(draw, W, H, is_portrait=False):
+    scale  = 1.6 if is_portrait else 1.0
+    pad    = int(60 * scale)
+    bar_h  = int(240 * scale)
+    bar_y  = H - bar_h
+
+    draw.rectangle([0, bar_y, W, H], fill=(10, 10, 12))
+    draw.rectangle([0, bar_y, W, bar_y + 4], fill=AMBER)
+    draw.rectangle([0, H - 4, W, H], fill=AMBER)
+
+    # Row 1: Channel
+    r1_h = int(52 * scale)
+    r1_y = bar_y + 4
+    draw.rectangle([0, r1_y, W, r1_y + r1_h], fill=(17, 17, 20))
+    f_ch  = get_font(int(18 * scale), bold=True)
+    f_sub = get_font(int(12 * scale))
+    draw.text((W//2, r1_y + int(22*scale)), "@indianthinkingathlete",
+              fill=AMBER, font=f_ch, anchor="mm")
+    draw.text((W//2, r1_y + int(42*scale)), "chess.com / abhi15041984",
+              fill=(80,80,80), font=f_sub, anchor="mm")
+    div1_y = r1_y + r1_h + 2
+    draw.rectangle([pad, div1_y, W-pad, div1_y+1], fill=(239,159,39,60))
+
+    # Row 2: SUBSCRIBE
+    r2_y = div1_y + int(8*scale)
+    r2_h = int(80*scale)
+    draw.rounded_rectangle([pad, r2_y, W-pad, r2_y+r2_h],
+                            radius=int(10*scale), fill=AMBER)
+    # Bell icon
+    bx  = pad + int(90*scale)
+    by  = r2_y + r2_h//2
+    bs  = int(18*scale)
+    bell_pts = [
+        bx, by-bs,
+        bx-bs, by-bs//2,
+        bx-bs, by+bs//2,
+        bx-int(bs*1.3), by+bs,
+        bx+int(bs*1.3), by+bs,
+        bx+bs, by+bs//2,
+        bx+bs, by-bs//2,
+    ]
+    draw.polygon(bell_pts, fill=DARK_C)
+    draw.ellipse([bx-int(bs*0.3), by+bs-int(bs*0.3),
+                  bx+int(bs*0.3), by+bs+int(bs*0.3)], fill=DARK_C)
+    f_subs = get_font(int(32*scale), bold=True)
+    f_hint = get_font(int(12*scale))
+    cx2    = pad + int((W - pad*2)*0.55)
+    draw.text((cx2, r2_y + int(32*scale)), "SUBSCRIBE",
+              fill=DARK_C, font=f_subs, anchor="mm")
+    draw.text((cx2, r2_y + int(62*scale)), "Hit the bell — never miss a game",
+              fill=(30,30,30), font=f_hint, anchor="mm")
+
+    div2_y = r2_y + r2_h + int(8*scale)
+    draw.rectangle([pad, div2_y, W-pad, div2_y+1], fill=(40,40,40))
+
+    # Row 3: LIKE | SHARE | COMMENT
+    r3_y = div2_y + int(10*scale)
+    r3_h = int(80*scale)
+    bw   = (W - pad*2 - int(20*scale)*2) // 3
+    gap  = int(20*scale)
+
+    boxes = [
+        {"label":"LIKE",    "color":(255,60,60),  "x": pad},
+        {"label":"SHARE",   "color":(220,220,220), "x": pad + bw + gap},
+        {"label":"COMMENT", "color":(100,150,255), "x": pad + (bw+gap)*2},
+    ]
+    f_lbl = get_font(int(19*scale), bold=True)
+
+    for b in boxes:
+        bx2 = b["x"]
+        col = b["color"]
+        draw.rounded_rectangle([bx2, r3_y, bx2+bw, r3_y+r3_h],
+                                radius=int(10*scale),
+                                fill=(20,20,22), outline=col,
+                                width=int(2*scale))
+
+        icon_cx = bx2 + bw//2
+        icon_cy = r3_y + int(28*scale)
+        is2     = int(14*scale)
+
+        if b["label"] == "LIKE":
+            # Heart: two circles + downward triangle
+            r3 = int(is2 * 0.7)
+            draw.ellipse([icon_cx - is2, icon_cy - r3,
+                          icon_cx,       icon_cy + r3], fill=col)
+            draw.ellipse([icon_cx,       icon_cy - r3,
+                          icon_cx + is2, icon_cy + r3], fill=col)
+            draw.polygon([
+                icon_cx - is2,     icon_cy + int(r3*0.5),
+                icon_cx + is2,     icon_cy + int(r3*0.5),
+                icon_cx,           icon_cy + int(is2*1.6),
+            ], fill=col)
+
+        elif b["label"] == "SHARE":
+            aw = int(is2*0.8)
+            draw.polygon([
+                icon_cx,              icon_cy - is2,
+                icon_cx - aw,         icon_cy - int(is2*0.3),
+                icon_cx - int(aw*0.4),icon_cy - int(is2*0.3),
+                icon_cx - int(aw*0.4),icon_cy + int(is2*0.4),
+                icon_cx + int(aw*0.4),icon_cy + int(is2*0.4),
+                icon_cx + int(aw*0.4),icon_cy - int(is2*0.3),
+                icon_cx + aw,         icon_cy - int(is2*0.3),
+            ], fill=col)
+            draw.rounded_rectangle([
+                icon_cx - aw, icon_cy + int(is2*0.5),
+                icon_cx + aw, icon_cy + int(is2*0.8)
+            ], radius=2, fill=col)
+
+        elif b["label"] == "COMMENT":
+            draw.rounded_rectangle([
+                icon_cx - is2, icon_cy - is2,
+                icon_cx + is2, icon_cy + int(is2*0.4)
+            ], radius=int(is2*0.4), fill=col)
+            draw.polygon([
+                icon_cx - int(is2*0.5), icon_cy + int(is2*0.4),
+                icon_cx + int(is2*0.2), icon_cy + int(is2*0.4),
+                icon_cx - int(is2*0.2), icon_cy + is2,
+            ], fill=col)
+
+        draw.text((icon_cx, r3_y + int(58*scale)), b["label"],
+                  fill=col, font=f_lbl, anchor="mm")
+
 # ── Frame builders ────────────────────────────────────────────────────────────
 
 def make_landscape_frame(board, pieces, move_pairs, cur_idx,
@@ -541,10 +667,11 @@ def make_landscape_frame(board, pieces, move_pairs, cur_idx,
     draw_move_list(draw, move_pairs, cur_idx, px, chk_y+28, pw, H-chk_y-55, F)
     draw.text((px,H-14), "@TheThinkingAthlete", fill=(55,55,60), font=F["xs"])
 
-    # Animated confetti — drawn last
+    # Animated confetti + LSSC — drawn last
     if confetti_particles:
         draw_confetti_frame(draw, confetti_particles, W, H, confetti_fidx)
         draw_winner_banner(draw, W, H, winner_text, F, term=meta.get('termination','') if meta else '')
+        draw_lssc_bar(draw, W, H, is_portrait=False)
 
     return img
 
@@ -558,7 +685,7 @@ def make_portrait_frame(board, pieces, move_pairs, cur_idx,
     W, H = 1080, 1920
     img  = Image.new("RGB", (W, H), DARK_C)
     draw = ImageDraw.Draw(img)
-    F    = make_fonts(1.3)
+    F    = make_fonts(2.0)
 
     draw.rectangle([0,0,W,5],   fill=AMBER)
     draw.rectangle([0,H-5,W,H], fill=AMBER)
@@ -581,20 +708,20 @@ def make_portrait_frame(board, pieces, move_pairs, cur_idx,
     # Players side by side
     hw = pw // 2 - 10
     # White box
-    draw.rounded_rectangle([px, py, px+hw, py+90], radius=8, fill=PANEL_C)
-    draw.text((px+10, py+10), "OPPONENT", fill=GRAY_C,  font=F["xs"])
-    draw.text((px+10, py+30), top_name,   fill=WHITE_C,  font=F["sm"])
-    draw.text((px+10, py+58), f"⭐ {top_rating}", fill=AMBER, font=F["sm"])
-    draw.text((px+hw-70, py+58), top_clk, fill=AMBER, font=F["sm"])
+    draw.rounded_rectangle([px, py, px+hw, py+130], radius=8, fill=PANEL_C)
+    draw.text((px+10, py+12), "OPPONENT", fill=GRAY_C,  font=F["xs"])
+    draw.text((px+10, py+42), top_name,   fill=WHITE_C,  font=F["sm"])
+    draw.text((px+10, py+90), f"Rating: {top_rating}", fill=AMBER, font=F["sm"])
+    draw.text((px+hw-90, py+90), top_clk, fill=AMBER, font=F["sm"])
     # You box
     bx = px + hw + 20
-    draw.rounded_rectangle([bx, py, bx+hw, py+90], radius=8, fill=PANEL_C)
-    draw.text((bx+10, py+10), "YOU ♟",   fill=AMBER,   font=F["xs"])
-    draw.text((bx+10, py+30), bot_name,   fill=WHITE_C,  font=F["sm"])
-    draw.text((bx+10, py+58), f"⭐ {bot_rating}", fill=AMBER, font=F["sm"])
-    draw.text((bx+hw-70, py+58), bot_clk, fill=AMBER, font=F["sm"])
+    draw.rounded_rectangle([bx, py, bx+hw, py+130], radius=8, fill=PANEL_C)
+    draw.text((bx+10, py+12), "YOU",      fill=AMBER,   font=F["xs"])
+    draw.text((bx+10, py+42), bot_name,   fill=WHITE_C,  font=F["sm"])
+    draw.text((bx+10, py+90), f"Rating: {bot_rating}", fill=AMBER, font=F["sm"])
+    draw.text((bx+hw-90, py+90), bot_clk, fill=AMBER, font=F["sm"])
 
-    py += 110
+    py += 150
 
     # Opening name
     if meta and meta["opening"]:
@@ -625,7 +752,7 @@ def make_portrait_frame(board, pieces, move_pairs, cur_idx,
 
     # Check / turn
     if board.is_check():
-        draw.text((W//2, py), "⚠  CHECK!", fill=CHECK_CLR, font=F["sm"], anchor="mm")
+        draw.text((W//2, py), "CHECK!", fill=CHECK_CLR, font=F["sm"], anchor="mm")
     else:
         tc = (220,220,220) if board.turn==chess.WHITE else (160,160,160)
         draw.text((W//2, py),
@@ -633,16 +760,18 @@ def make_portrait_frame(board, pieces, move_pairs, cur_idx,
                   fill=tc, font=F["sm"], anchor="mm")
     py += 36
 
-    # Move list
-    draw_move_list(draw, move_pairs, cur_idx, px, py, pw, H-py-60, F)
+    # Move list — use bigger font for portrait
+    F_moves = make_fonts(2.2)
+    draw_move_list(draw, move_pairs, cur_idx, px, py, pw, H-py-80, F_moves)
 
     draw.text((W//2, H-40), "@TheThinkingAthlete", fill=(55,55,60),
               font=F["xs"], anchor="mm")
 
-    # Animated confetti — drawn last
+    # Animated confetti + LSSC — drawn last
     if confetti_particles:
         draw_confetti_frame(draw, confetti_particles, W, H, confetti_fidx)
         draw_winner_banner(draw, W, H, winner_text, F, term=meta.get('termination','') if meta else '')
+        draw_lssc_bar(draw, W, H, is_portrait=True)
 
     return img
 

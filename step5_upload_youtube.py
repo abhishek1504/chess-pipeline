@@ -188,6 +188,91 @@ def parse_script(script_path):
 def get_upload_status_file(game_dir):
     return os.path.join(game_dir, "youtube_upload.json")
 
+def get_game_type_from_script(game_dir):
+    """Read game type (BLITZ/RAPID) from script.txt."""
+    script = os.path.join(game_dir, "script.txt")
+    if not os.path.exists(script):
+        return None
+    content = open(script).read()
+    if "BLITZ" in content:
+        return "BLITZ"
+    if "RAPID" in content:
+        return "RAPID"
+    if "BULLET" in content:
+        return "BULLET"
+    return None
+
+def add_to_playlist(youtube, video_id, playlist_id):
+    """Add a video to a YouTube playlist."""
+    if not playlist_id:
+        return False
+    try:
+        youtube.playlistItems().insert(
+            part="snippet",
+            body={
+                "snippet": {
+                    "playlistId": playlist_id,
+                    "resourceId": {
+                        "kind":    "youtube#video",
+                        "videoId": video_id,
+                    }
+                }
+            }
+        ).execute()
+        print(f"  ✅ Added to playlist")
+        return True
+    except Exception as e:
+        print(f"  ⚠️  Playlist add failed: {e}")
+        return False
+
+def create_playlist(youtube, title, description=""):
+    """Create a new playlist and return its ID."""
+    try:
+        resp = youtube.playlists().insert(
+            part="snippet,status",
+            body={
+                "snippet": {
+                    "title":       title,
+                    "description": description,
+                },
+                "status": {"privacyStatus": "public"}
+            }
+        ).execute()
+        return resp["id"]
+    except Exception as e:
+        print(f"  ❌ Could not create playlist: {e}")
+        return None
+
+def ensure_playlists(youtube):
+    """
+    Make sure BLITZ and RAPID playlists exist.
+    Creates them if PLAYLIST_BLITZ / PLAYLIST_RAPID env vars are empty.
+    Prints IDs so you can save them as GitHub Secrets.
+    """
+    global PLAYLIST_BLITZ, PLAYLIST_RAPID
+
+    if not PLAYLIST_BLITZ:
+        print("  📋 Creating BLITZ playlist...")
+        PLAYLIST_BLITZ = create_playlist(
+            youtube,
+            "Blitz Chess Games — Indian Thinking Athlete",
+            "All blitz chess games from my Road to 1000 journey."
+        )
+        if PLAYLIST_BLITZ:
+            print(f"  ✅ BLITZ playlist created: {PLAYLIST_BLITZ}")
+            print(f"  💡 Add to GitHub Secrets as PLAYLIST_BLITZ={PLAYLIST_BLITZ}")
+
+    if not PLAYLIST_RAPID:
+        print("  📋 Creating RAPID playlist...")
+        PLAYLIST_RAPID = create_playlist(
+            youtube,
+            "Rapid Chess Games — Indian Thinking Athlete",
+            "All rapid chess games from my Road to 1000 journey."
+        )
+        if PLAYLIST_RAPID:
+            print(f"  ✅ RAPID playlist created: {PLAYLIST_RAPID}")
+            print(f"  💡 Add to GitHub Secrets as PLAYLIST_RAPID={PLAYLIST_RAPID}")
+
 def already_uploaded(game_dir):
     """Check if this game was already uploaded."""
     status_file = get_upload_status_file(game_dir)
@@ -266,6 +351,17 @@ def upload_video(youtube, video_path, metadata, game_dir):
     print(f"\n  ✅ Uploaded! {url}")
     print(f"  🔒 Status: {PRIVACY_STATUS} — review and make public when ready")
 
+    # Add to correct playlist based on game type
+    game_type = get_game_type_from_script(game_dir)
+    if game_type == "BLITZ" and PLAYLIST_BLITZ:
+        print(f"  📋 Adding to BLITZ playlist...")
+        add_to_playlist(youtube, video_id, PLAYLIST_BLITZ)
+    elif game_type == "RAPID" and PLAYLIST_RAPID:
+        print(f"  📋 Adding to RAPID playlist...")
+        add_to_playlist(youtube, video_id, PLAYLIST_RAPID)
+    elif game_type:
+        print(f"  ℹ️  Game type: {game_type} — no playlist configured")
+
     save_upload_status(game_dir, video_id, metadata["title"], url)
     return video_id
 
@@ -327,6 +423,11 @@ def main():
 
     # Authenticate
     youtube = get_youtube_client()
+
+    # Ensure playlists exist (creates if missing)
+    print("📋 Checking playlists...")
+    ensure_playlists(youtube)
+    print()
 
     results = []
     for i, (game_dir, vid_path) in enumerate(to_upload):
