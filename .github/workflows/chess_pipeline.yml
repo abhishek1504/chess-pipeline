@@ -69,8 +69,6 @@ jobs:
         run: python step5_upload_youtube.py
         env:
           YOUTUBE_TOKEN:   ${{ secrets.YOUTUBE_TOKEN }}
-          PLAYLIST_BLITZ:  ${{ secrets.PLAYLIST_BLITZ }}
-          PLAYLIST_RAPID:  ${{ secrets.PLAYLIST_RAPID }}
           MAX_UPLOADS:     "6"
 
       # ── Commit upload log so next run knows what was uploaded ─────────────

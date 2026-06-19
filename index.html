@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The Thinking Athlete — Chess Coaching in Hyderabad</title>
+<meta name="description" content="Personal chess coaching for beginners and intermediate players in Hyderabad. Learn from Abhishek — software developer, runner, chess player who started at 42."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --black:#0d0d0d;
+  --white:#ffffff;
+  --cream:#f9f6f0;
+  --amber:#EF9F27;
+  --amber-d:#c97f10;
+  --amber-l:#fdf3e0;
+  --gray:#6b7280;
+  --gray-l:#e8e4dd;
+  --saffron:#FF9933;
+  --green:#138808;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;color:var(--black);background:var(--cream);line-height:1.6;overflow-x:hidden;}
+a{text-decoration:none;color:inherit;}
+img{max-width:100%;display:block;}
+
+/* ── Type ── */
+.display{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;line-height:0.92;letter-spacing:-0.01em;}
+.serif{font-family:'Lora',serif;}
+.label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;}
+
+/* ── Layout ── */
+.container{max-width:1120px;margin:0 auto;padding:0 28px;}
+.section{padding:100px 0;}
+
+/* ── Buttons ── */
+.btn{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;letter-spacing:0.08em;text-transform:uppercase;padding:14px 32px;transition:all 0.2s;cursor:pointer;border:none;}
+.btn-amber{background:var(--amber);color:var(--black);}
+.btn-amber:hover{background:var(--amber-d);transform:translateY(-2px);}
+.btn-black{background:var(--black);color:var(--white);}
+.btn-black:hover{background:#222;transform:translateY(-2px);}
+.btn-outline{background:transparent;color:var(--black);border:2px solid var(--black);}
+.btn-outline:hover{background:var(--black);color:var(--white);}
+.btn-outline-w{background:transparent;color:var(--white);border:2px solid var(--white);}
+.btn-outline-w:hover{background:var(--white);color:var(--black);}
+
+/* ── Nav ── */
+nav{position:fixed;top:0;width:100%;z-index:100;background:var(--black);border-bottom:3px solid var(--amber);}
+.nav-inner{max-width:1120px;margin:0 auto;padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--white);display:flex;align-items:center;gap:10px;}
+.nav-logo-pawn{color:var(--amber);font-size:1.5rem;}
+.nav-links{display:flex;gap:28px;align-items:center;}
+.nav-links a{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:0.85rem;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.65);transition:color 0.2s;}
+.nav-links a:hover{color:var(--white);}
+
+/* ── Hero ── */
+.hero{min-height:100vh;background:var(--black);display:grid;grid-template-columns:1fr 1fr;padding-top:60px;}
+.hero-left{display:flex;flex-direction:column;justify-content:center;padding:80px 64px 80px 28px;max-width:640px;margin-left:auto;}
+.hero-eyebrow{display:flex;align-items:center;gap:12px;margin-bottom:32px;}
+.eyebrow-line{width:40px;height:2px;background:var(--amber);}
+.eyebrow-text{color:var(--amber);font-size:0.75rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;}
+/* Indian tricolor dots */
+.tricolor{display:flex;gap:4px;margin-left:8px;}
+.tricolor span{width:6px;height:6px;border-radius:50%;}
+.hero-headline{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;font-size:clamp(4rem,7vw,7rem);line-height:0.88;color:var(--white);margin-bottom:32px;}
+.hero-headline .amber{color:var(--amber);}
+.hero-headline .outline{-webkit-text-stroke:2px var(--white);color:transparent;}
+.hero-sub{font-family:'Lora',serif;font-size:1.1rem;color:rgba(255,255,255,0.65);line-height:1.7;margin-bottom:40px;max-width:420px;}
+.hero-sub em{color:var(--amber);font-style:italic;}
+.hero-cta{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:56px;}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid rgba(255,255,255,0.1);padding-top:40px;}
+.hero-stat{padding-right:24px;border-right:1px solid rgba(255,255,255,0.1);}
+.hero-stat:last-child{border-right:none;padding-left:24px;padding-right:0;}
+.hero-stat:not(:first-child){padding-left:24px;}
+.stat-n{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:2.4rem;color:var(--white);line-height:1;}
+.stat-l{font-size:0.75rem;color:rgba(255,255,255,0.45);margin-top:4px;letter-spacing:0.05em;}
+
+.hero-right{background:var(--black);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border-left:1px solid rgba(255,255,255,0.06);}
+.hero-board{display:grid;grid-template-columns:repeat(8,1fr);width:100%;max-width:480px;aspect-ratio:1;opacity:0.15;}
+.hero-board-sq{aspect-ratio:1;}
+.hero-board-sq.light{background:rgba(255,255,255,0.08);}
+.hero-board-sq.dark{background:rgba(255,255,255,0.02);}
+.hero-pawn-big{position:absolute;font-size:200px;color:rgba(239,159,39,0.12);pointer-events:none;user-select:none;}
+.hero-quote{position:absolute;bottom:48px;left:0;right:0;padding:0 40px;text-align:center;}
+.hero-quote p{font-family:'Lora',serif;font-style:italic;font-size:1rem;color:rgba(255,255,255,0.35);line-height:1.6;}
+.hero-quote cite{display:block;font-style:normal;font-size:0.75rem;color:var(--amber);margin-top:8px;letter-spacing:0.1em;text-transform:uppercase;}
+
+/* ── Ticker ── */
+.ticker{background:var(--amber);padding:12px 0;overflow:hidden;white-space:nowrap;}
+.ticker-inner{display:inline-flex;gap:48px;animation:ticker 20s linear infinite;}
+.ticker-item{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.9rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--black);display:flex;align-items:center;gap:12px;}
+.ticker-sep{color:rgba(0,0,0,0.3);}
+@keyframes ticker{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* ── About ── */
+.about{background:var(--cream);}
+.about-grid{display:grid;grid-template-columns:5fr 7fr;gap:80px;align-items:start;}
+.about-left{position:sticky;top:100px;}
+.about-number{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:8rem;color:var(--gray-l);line-height:1;margin-bottom:-20px;}
+.about-label{color:var(--amber);margin-bottom:16px;}
+.about-left h2{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;font-size:clamp(2.5rem,4vw,3.5rem);line-height:0.92;margin-bottom:24px;}
+.about-left h2 em{font-style:italic;color:var(--amber);font-family:'Lora',serif;text-transform:none;}
+.about-right p{font-family:'Lora',serif;font-size:1.05rem;color:#444;line-height:1.85;margin-bottom:24px;}
+.about-right p strong{color:var(--black);}
+.quote-block{border-left:3px solid var(--amber);padding:20px 24px;margin:32px 0;background:var(--amber-l);border-radius:0 4px 4px 0;}
+.quote-block p{font-family:'Lora',serif;font-style:italic;font-size:1.1rem;color:var(--black);margin:0;}
+.tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:32px;}
+.tag{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;padding:6px 14px;border:1.5px solid var(--gray-l);color:var(--gray);}
+
+/* ── Coaching ── */
+.coaching{background:var(--black);}
+.section-head{margin-bottom:64px;}
+.section-head .label{color:var(--amber);margin-bottom:12px;}
+.section-head h2{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;font-size:clamp(2.5rem,4vw,3.8rem);line-height:0.92;color:var(--white);}
+.section-head p{font-family:'Lora',serif;color:rgba(255,255,255,0.5);margin-top:16px;font-size:1rem;max-width:480px;}
+.plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.08);}
+.plan{background:var(--black);padding:40px 36px;border-top:3px solid transparent;transition:border-color 0.2s;}
+.plan:hover{border-top-color:var(--amber);}
+.plan.featured{background:#111;border-top-color:var(--amber);}
+.plan-tag{color:var(--amber);margin-bottom:8px;}
+.plan-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;font-size:1.8rem;color:var(--white);line-height:1;margin-bottom:24px;}
+.plan-price-row{display:flex;align-items:baseline;gap:4px;margin-bottom:4px;}
+.plan-price{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:2.8rem;color:var(--white);}
+.plan-price-per{font-size:0.9rem;color:rgba(255,255,255,0.4);}
+.plan-sessions{font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:32px;}
+.plan-divider{height:1px;background:rgba(255,255,255,0.08);margin-bottom:28px;}
+.plan-features{list-style:none;margin-bottom:36px;}
+.plan-features li{font-size:0.875rem;color:rgba(255,255,255,0.6);padding:7px 0;display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.plan-features li::before{content:'—';color:var(--amber);flex-shrink:0;font-weight:700;}
+.plan-features li:last-child{border-bottom:none;}
+.plan-badge{display:inline-block;background:var(--amber);color:var(--black);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;padding:3px 10px;margin-bottom:12px;}
+
+/* ── How it works ── */
+.how{background:var(--cream);}
+.how .section-head h2{color:var(--black);}
+.how .section-head p{color:var(--gray);}
+.how-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;}
+.how-step{padding:40px 32px;border-right:1px solid var(--gray-l);position:relative;}
+.how-step:last-child{border-right:none;}
+.how-step::before{content:'';position:absolute;top:0;left:0;width:40px;height:3px;background:var(--amber);}
+.step-num{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:5rem;color:var(--gray-l);line-height:1;margin-bottom:16px;}
+.how-step h3{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:1.1rem;letter-spacing:0.05em;margin-bottom:12px;}
+.how-step p{font-size:0.875rem;color:var(--gray);line-height:1.65;}
+
+/* ── Videos ── */
+.videos{background:var(--black);}
+.videos .section-head h2{color:var(--white);}
+.yt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:rgba(255,255,255,0.05);}
+.yt-card{background:var(--black);transition:background 0.2s;cursor:pointer;}
+.yt-card:hover{background:#111;}
+.yt-thumb{aspect-ratio:16/9;background:#0a0a0a;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border-bottom:1px solid rgba(255,255,255,0.05);}
+.yt-thumb-pawn{font-size:3rem;color:rgba(239,159,39,0.15);}
+.yt-play-btn{position:absolute;width:44px;height:44px;background:var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--black);padding-left:3px;}
+.yt-info{padding:20px 24px 24px;}
+.yt-type{color:var(--amber);margin-bottom:6px;}
+.yt-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;letter-spacing:0.02em;text-transform:uppercase;color:var(--white);line-height:1.3;margin-bottom:8px;}
+.yt-meta{font-size:0.75rem;color:rgba(255,255,255,0.3);}
+.yt-cta{text-align:center;margin-top:40px;}
+
+/* ── Booking ── */
+.booking{background:var(--cream);}
+.booking-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--black);overflow:hidden;}
+.booking-left{padding:64px 56px;background:var(--black);}
+.booking-left h2{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;font-size:clamp(2.2rem,3.5vw,3rem);line-height:0.92;color:var(--white);margin-bottom:8px;}
+.booking-left h2 span{color:var(--amber);}
+.booking-left .serif{color:rgba(255,255,255,0.5);font-size:1rem;margin-bottom:40px;display:block;}
+.booking-detail{display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid rgba(255,255,255,0.06);}
+.booking-detail:last-of-type{border-bottom:none;}
+.b-icon{width:40px;height:40px;background:rgba(239,159,39,0.1);border:1px solid rgba(239,159,39,0.2);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.b-label{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:2px;}
+.b-value{font-size:0.9rem;color:var(--white);}
+.booking-right{padding:64px 56px;background:#0a0a0a;border-left:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;justify-content:center;}
+.calendly-box{border:1px dashed rgba(255,255,255,0.1);padding:48px 32px;text-align:center;}
+.calendly-box p{font-family:'Lora',serif;font-style:italic;color:rgba(255,255,255,0.3);font-size:0.9rem;margin-bottom:24px;}
+
+/* ── Contact ── */
+.contact{background:var(--cream);}
+.contact-grid{display:grid;grid-template-columns:5fr 7fr;gap:80px;align-items:start;}
+.contact-info .label{color:var(--amber);margin-bottom:12px;}
+.contact-info h2{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;font-size:clamp(2.2rem,3.5vw,3rem);line-height:0.92;margin-bottom:20px;}
+.contact-info .serif{color:var(--gray);font-size:1rem;margin-bottom:40px;display:block;line-height:1.7;}
+.c-item{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--gray-l);}
+.c-item:last-child{border-bottom:none;}
+.c-dot{width:8px;height:8px;background:var(--amber);border-radius:50%;flex-shrink:0;}
+.c-info strong{display:block;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray);font-weight:600;margin-bottom:2px;}
+.c-info span{font-size:0.9rem;color:var(--black);}
+.contact-form{display:flex;flex-direction:column;gap:0;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:2px;}
+.f-group{display:flex;flex-direction:column;}
+.f-group label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gray);padding:14px 16px 6px;background:var(--white);}
+.f-group input,.f-group select,.f-group textarea{padding:0 16px 14px;border:none;font-size:0.9rem;font-family:'Inter',sans-serif;color:var(--black);background:var(--white);outline:none;transition:background 0.2s;}
+.f-group input:focus,.f-group select:focus,.f-group textarea:focus{background:#fffef9;}
+.f-group textarea{resize:vertical;min-height:120px;padding-top:8px;}
+.f-group.full{margin-bottom:2px;}
+.form-submit{margin-top:2px;}
+.form-submit .btn{width:100%;text-align:center;padding:18px;}
+#success-msg{display:none;background:var(--amber-l);border-left:3px solid var(--amber);padding:14px 16px;font-size:0.875rem;color:var(--black);margin-top:2px;}
+
+/* ── Footer ── */
+footer{background:var(--black);padding:56px 0 32px;}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr;gap:56px;padding-bottom:48px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.footer-brand-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;font-size:1.4rem;color:var(--white);letter-spacing:0.05em;margin-bottom:12px;}
+.footer-brand-name span{color:var(--amber);}
+.footer-brand p{font-size:0.85rem;color:rgba(255,255,255,0.35);line-height:1.7;max-width:280px;}
+.footer-col h4{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:16px;}
+.footer-col a{display:block;font-size:0.875rem;color:rgba(255,255,255,0.5);margin-bottom:10px;transition:color 0.2s;}
+.footer-col a:hover{color:var(--white);}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:28px;}
+.footer-bottom span{font-size:0.8rem;color:rgba(255,255,255,0.25);}
+/* Tricolor bar at very bottom */
+.tricolor-bar{height:3px;display:flex;}
+.tricolor-bar div{flex:1;}
+
+/* ── Mobile ── */
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;}
+  .hero-right{display:none;}
+  .hero-left{padding:60px 28px;max-width:100%;}
+  .about-grid,.contact-grid{grid-template-columns:1fr;}
+  .about-left{position:static;}
+  .plans-grid,.how-grid,.yt-grid,.footer-top{grid-template-columns:1fr;}
+  .booking-grid,.contact-grid{grid-template-columns:1fr;}
+  .booking-left,.booking-right{padding:40px 28px;}
+  .nav-links .nav-cta-only{display:block;}
+  .nav-links a:not(.btn){display:none;}
+  .hero-headline{font-size:clamp(3.2rem,12vw,5rem);}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo"><span class="nav-logo-pawn">♟</span> The Thinking Athlete</div>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#coaching">Coaching</a>
+      <a href="#how">Process</a>
+      <a href="#videos">Videos</a>
+      <a href="#contact">Contact</a>
+      <a href="#book" class="btn btn-amber" style="padding:10px 20px;font-size:0.8rem;">Book now</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-line"></div>
+      <span class="eyebrow-text">Chess Coaching · Hyderabad</span>
+      <div class="tricolor">
+        <span style="background:#FF9933;"></span>
+        <span style="background:#ffffff;"></span>
+        <span style="background:#138808;"></span>
+      </div>
+    </div>
+    <h1 class="hero-headline">
+      Chess.<br/>
+      <span class="amber">Discipline.</span><br/>
+      <span class="outline">The Grind.</span>
+    </h1>
+    <p class="hero-sub">
+      Personal coaching for beginners and intermediate players who want to <em>actually improve</em> — not just play more games.
+    </p>
+    <div class="hero-cta">
+      <a href="#book" class="btn btn-amber">Book a free intro call</a>
+      <a href="#coaching" class="btn btn-outline-w">View plans</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="stat-n">42</div>
+        <div class="stat-l">Age I started</div>
+      </div>
+      <div class="hero-stat">
+        <div class="stat-n">1000+</div>
+        <div class="stat-l">Games played</div>
+      </div>
+      <div class="hero-stat">
+        <div class="stat-n">HYD</div>
+        <div class="stat-l">In-person only</div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-board" id="board"></div>
+    <div class="hero-pawn-big">♟</div>
+    <div class="hero-quote">
+      <p>"Every grandmaster started somewhere. I started at 42. Welcome to the journey."</p>
+      <cite>— Abhishek · @indianthinkingathlete</cite>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner" id="ticker">
+    <span class="ticker-item">Chess Coaching Hyderabad <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">Beginner to Intermediate <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">In-Person Sessions <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">Road to 1000 <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">@indianthinkingathlete <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">chess.com: abhi15041984 <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">Chess Coaching Hyderabad <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">Beginner to Intermediate <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">In-Person Sessions <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">Road to 1000 <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">@indianthinkingathlete <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">chess.com: abhi15041984 <span class="ticker-sep">·</span></span>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section class="section about" id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-left">
+        <div class="about-number">42</div>
+        <div class="label about-label">About Abhishek</div>
+        <h2>I started<br/><em>late</em>.<br/>So did you.</h2>
+        <a href="#book" class="btn btn-black" style="margin-top:32px;">Start your journey</a>
+      </div>
+      <div class="about-right">
+        <p>I'm a software developer and distance runner from Hyderabad. I picked up chess at 42 — no background, no coach, no clue what the Sicilian Defense was. Just curiosity and a willingness to lose a lot of games.</p>
+        <div class="quote-block">
+          <p>"The best time to start was when you were a kid. The second best time is right now."</p>
+        </div>
+        <p>I document every game on YouTube — <strong>@indianthinkingathlete</strong>. Every blunder, every good move, every game where I got checkmated in 12 moves. The journey is the content.</p>
+        <p>That honesty is what makes me a better coach. I know what it feels like to not understand why you keep losing. I know the frustration of hanging pieces you didn't even see. I teach the way I wish someone had taught me — <strong>clear, direct, and without the jargon</strong>.</p>
+        <div class="tag-row">
+          <span class="tag">chess.com · abhi15041984</span>
+          <span class="tag">Software Developer</span>
+          <span class="tag">Distance Runner</span>
+          <span class="tag">Hyderabad</span>
+          <span class="tag">YouTube · @indianthinkingathlete</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COACHING -->
+<section class="section coaching" id="coaching">
+  <div class="container">
+    <div class="section-head">
+      <div class="label">Coaching Plans</div>
+      <h2>Pick your<br/>level. Start<br/>today.</h2>
+      <p class="serif">Monthly subscriptions. Weekly sessions. In-person in Hyderabad. Cancel anytime.</p>
+    </div>
+    <div class="plans-grid">
+
+      <div class="plan">
+        <div class="label plan-tag">Beginner</div>
+        <div class="plan-name">First Move</div>
+        <div class="plan-price-row">
+          <span class="plan-price">&#8377;2,499</span>
+          <span class="plan-price-per">/month</span>
+        </div>
+        <div class="plan-sessions">2 sessions · 60 min each</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li>How pieces move and basic rules</li>
+          <li>Checkmate patterns</li>
+          <li>Opening principles</li>
+          <li>Beginner tactical puzzles</li>
+          <li>Game review every session</li>
+          <li>WhatsApp support</li>
+        </ul>
+        <a href="#book" class="btn btn-outline-w" style="display:block;text-align:center;">Get started</a>
+      </div>
+
+      <div class="plan featured">
+        <div class="plan-badge">Most popular</div>
+        <div class="label plan-tag">Intermediate</div>
+        <div class="plan-name">Deep Game</div>
+        <div class="plan-price-row">
+          <span class="plan-price">&#8377;4,499</span>
+          <span class="plan-price-per">/month</span>
+        </div>
+        <div class="plan-sessions">4 sessions · 60 min each</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li>Opening repertoire building</li>
+          <li>Middlegame strategy and plans</li>
+          <li>Endgame fundamentals</li>
+          <li>Advanced tactical patterns</li>
+          <li>Full game analysis with engine</li>
+          <li>Personalised study plan</li>
+          <li>WhatsApp support</li>
+        </ul>
+        <a href="#book" class="btn btn-amber" style="display:block;text-align:center;">Get started</a>
+      </div>
+
+      <div class="plan">
+        <div class="label plan-tag">Intensive</div>
+        <div class="plan-name">Thinking Athlete</div>
+        <div class="plan-price-row">
+          <span class="plan-price">&#8377;7,999</span>
+          <span class="plan-price-per">/month</span>
+        </div>
+        <div class="plan-sessions">8 sessions · 60 min each</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li>Everything in Deep Game</li>
+          <li>Tournament preparation</li>
+          <li>Live game coaching together</li>
+          <li>Weekly progress tracking</li>
+          <li>Custom training games</li>
+          <li>Priority WhatsApp support</li>
+          <li>Monthly performance report</li>
+        </ul>
+        <a href="#book" class="btn btn-outline-w" style="display:block;text-align:center;">Get started</a>
+      </div>
+
+    </div>
+    <p style="color:rgba(255,255,255,0.3);font-size:0.875rem;margin-top:28px;font-family:'Lora',serif;font-style:italic;">
+      Not sure which plan? <a href="#book" style="color:var(--amber);border-bottom:1px solid var(--amber);">Book a free 30-min intro call</a> — no commitment required.
+    </p>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section how" id="how">
+  <div class="container">
+    <div class="section-head">
+      <div class="label" style="color:var(--amber);">The Process</div>
+      <h2 style="color:var(--black);">Four steps.<br/>No fluff.</h2>
+    </div>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="step-num">01</div>
+        <h3>Book a free call</h3>
+        <p>30 minutes. We talk about where you are, what you want to improve, and whether we're a good fit.</p>
+      </div>
+      <div class="how-step">
+        <div class="step-num">02</div>
+        <h3>Pick your plan</h3>
+        <p>Choose the plan that matches your level and how serious you are. Cancel any month — no contracts.</p>
+      </div>
+      <div class="how-step">
+        <div class="step-num">03</div>
+        <h3>Meet in Hyderabad</h3>
+        <p>All sessions are in-person. Location in Hyderabad confirmed once you book.</p>
+      </div>
+      <div class="how-step">
+        <div class="step-num">04</div>
+        <h3>Play and improve</h3>
+        <p>Study plans, game reviews, puzzles, and live play. The grind is the method.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VIDEOS -->
+<section class="section videos" id="videos">
+  <div class="container">
+    <div class="section-head">
+      <div class="label">On YouTube</div>
+      <h2>Watch me<br/>play. Every<br/>game.</h2>
+      <p class="serif" style="color:rgba(255,255,255,0.4);">No editing out the losses. No pretending I'm better than I am. Subscribe to follow the real journey.</p>
+    </div>
+    <div class="yt-grid">
+      <a class="yt-card" href="https://youtube.com/@indianthinkingathlete" target="_blank">
+        <div class="yt-thumb"><span class="yt-thumb-pawn">♟</span><div class="yt-play-btn">&#9654;</div></div>
+        <div class="yt-info">
+          <div class="label yt-type">Blitz · Full Game</div>
+          <div class="yt-title">Sicilian Defense — Won by Resignation</div>
+          <div class="yt-meta">@indianthinkingathlete · chess.com</div>
+        </div>
+      </a>
+      <a class="yt-card" href="https://youtube.com/@indianthinkingathlete" target="_blank">
+        <div class="yt-thumb"><span class="yt-thumb-pawn">♟</span><div class="yt-play-btn">&#9654;</div></div>
+        <div class="yt-info">
+          <div class="label yt-type">Rapid · Full Game</div>
+          <div class="yt-title">Italian Game — Checkmate in 24 Moves</div>
+          <div class="yt-meta">@indianthinkingathlete · chess.com</div>
+        </div>
+      </a>
+      <a class="yt-card" href="https://youtube.com/@indianthinkingathlete" target="_blank">
+        <div class="yt-thumb"><span class="yt-thumb-pawn">♟</span><div class="yt-play-btn">&#9654;</div></div>
+        <div class="yt-info">
+          <div class="label yt-type">Blitz · Shorts</div>
+          <div class="yt-title">London System — Last 20 Moves</div>
+          <div class="yt-meta">@indianthinkingathlete · chess.com</div>
+        </div>
+      </a>
+    </div>
+    <div class="yt-cta">
+      <a href="https://youtube.com/@indianthinkingathlete" target="_blank" class="btn btn-amber">Watch on YouTube &#8599;</a>
+    </div>
+  </div>
+</section>
+
+<!-- BOOKING -->
+<section class="section booking" id="book">
+  <div class="container">
+    <div class="booking-grid">
+      <div class="booking-left">
+        <div class="label" style="color:var(--amber);margin-bottom:12px;">Book a Session</div>
+        <h2>Start with a <span>free call.</span></h2>
+        <span class="serif">30 minutes. No commitment. Just chess.</span>
+        <div class="booking-detail">
+          <div class="b-icon">&#128205;</div>
+          <div><div class="b-label">Location</div><div class="b-value">In-person · Hyderabad, Telangana</div></div>
+        </div>
+        <div class="booking-detail">
+          <div class="b-icon">&#9201;</div>
+          <div><div class="b-label">Session length</div><div class="b-value">60 minutes per session</div></div>
+        </div>
+        <div class="booking-detail">
+          <div class="b-icon">&#128231;</div>
+          <div><div class="b-label">Email</div><div class="b-value">thinkingathleteindia@gmail.com</div></div>
+        </div>
+        <div class="booking-detail">
+          <div class="b-icon">&#9820;</div>
+          <div><div class="b-label">chess.com</div><div class="b-value">abhi15041984</div></div>
+        </div>
+        <a href="mailto:thinkingathleteindia@gmail.com" class="btn btn-amber" style="margin-top:36px;">Email to book &#8599;</a>
+      </div>
+      <div class="booking-right">
+        <div class="calendly-box">
+          <p style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,0.4);letter-spacing:0.05em;margin-bottom:8px;">Calendly Booking</p>
+          <p>Replace this box with your Calendly embed once your account is set up at calendly.com</p>
+          <a href="https://calendly.com" target="_blank" class="btn btn-amber" style="margin-top:16px;display:inline-block;">Set up Calendly &#8599;</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="section contact" id="contact">
+  <div class="container">
+    <div class="contact-grid">
+      <div class="contact-info">
+        <div class="label">Contact</div>
+        <h2>Have a question?<br/>Just ask.</h2>
+        <span class="serif">I reply within 24 hours. No bots, no assistants — just me.</span>
+        <div class="c-item">
+          <div class="c-dot"></div>
+          <div class="c-info"><strong>Email</strong><span>thinkingathleteindia@gmail.com</span></div>
+        </div>
+        <div class="c-item">
+          <div class="c-dot"></div>
+          <div class="c-info"><strong>YouTube</strong><span>@indianthinkingathlete</span></div>
+        </div>
+        <div class="c-item">
+          <div class="c-dot"></div>
+          <div class="c-info"><strong>chess.com</strong><span>abhi15041984</span></div>
+        </div>
+        <div class="c-item">
+          <div class="c-dot"></div>
+          <div class="c-info"><strong>Location</strong><span>Hyderabad, Telangana, India</span></div>
+        </div>
+      </div>
+      <form class="contact-form" onsubmit="handleForm(event)">
+        <div class="form-row">
+          <div class="f-group">
+            <label>First name</label>
+            <input type="text" placeholder="Rahul" required/>
+          </div>
+          <div class="f-group">
+            <label>Last name</label>
+            <input type="text" placeholder="Sharma" required/>
+          </div>
+        </div>
+        <div class="f-group full">
+          <label>Email address</label>
+          <input type="email" placeholder="rahul@email.com" required/>
+        </div>
+        <div class="f-group full" style="margin-bottom:2px;">
+          <label>Your chess level</label>
+          <select>
+            <option>Complete beginner — never played</option>
+            <option>Beginner — know the rules</option>
+            <option>Intermediate — rated 800 to 1200</option>
+            <option>Intermediate+ — rated 1200 to 1600</option>
+          </select>
+        </div>
+        <div class="f-group full" style="margin-bottom:2px;">
+          <label>Message</label>
+          <textarea placeholder="Tell me about your chess goals and what you want to improve..."></textarea>
+        </div>
+        <div class="form-submit">
+          <button type="submit" class="btn btn-black">Send message &#8594;</button>
+        </div>
+        <div id="success-msg">Message sent. I will get back to you within 24 hours.</div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-brand-name">The <span>Thinking</span> Athlete</div>
+        <p>Chess coaching for beginners and intermediate players in Hyderabad. Chess. Discipline. The slow grind of getting better.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Navigate</h4>
+        <a href="#about">About</a>
+        <a href="#coaching">Coaching plans</a>
+        <a href="#how">How it works</a>
+        <a href="#book">Book a session</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Find me</h4>
+        <a href="https://youtube.com/@indianthinkingathlete" target="_blank">YouTube</a>
+        <a href="https://chess.com/member/abhi15041984" target="_blank">chess.com</a>
+        <a href="mailto:thinkingathleteindia@gmail.com">Email</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&#169; 2026 The Thinking Athlete · Hyderabad</span>
+      <span>Made with &#9820; and patience</span>
+    </div>
+  </div>
+  <div class="tricolor-bar">
+    <div style="background:#FF9933;"></div>
+    <div style="background:#ffffff;"></div>
+    <div style="background:#138808;"></div>
+  </div>
+</footer>
+
+<script>
+// Chess board pattern
+const board = document.getElementById('board');
+if(board){
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const sq=document.createElement('div');
+      sq.className='hero-board-sq '+((r+c)%2===0?'light':'dark');
+      board.appendChild(sq);
+    }
+  }
+}
+
+// Nav scroll highlight
+const secs=document.querySelectorAll('section[id]');
+const navAs=document.querySelectorAll('.nav-links a[href^="#"]');
+window.addEventListener('scroll',()=>{
+  let cur='';
+  secs.forEach(s=>{if(window.scrollY>=s.offsetTop-70)cur=s.id;});
+  navAs.forEach(a=>{
+    a.style.color=a.getAttribute('href')==='#'+cur?'#ffffff':'';
+  });
+});
+
+// Contact form
+function handleForm(e){
+  e.preventDefault();
+  document.getElementById('success-msg').style.display='block';
+  e.target.reset();
+  setTimeout(()=>document.getElementById('success-msg').style.display='none',5000);
+}
+</script>
+</body>
+</html>
