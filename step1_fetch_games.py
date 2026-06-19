@@ -1,3 +1,5 @@
+import chess
+import chess.pgn
 """
 STEP 1 — Fetch ALL Won Games (All Time)
 Filters:
@@ -44,6 +46,71 @@ def get_my_side(game):
         return "white"
     return "black"
 
+
+# ── Blunder detection ─────────────────────────────────────────────────────────
+
+PIECE_VALUES = {
+    chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3,
+    chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0
+}
+BLUNDER_THRESHOLD = 3   # losing 3+ points in one move = blunder (bishop or better)
+
+def count_my_blunders(game_data):
+    """
+    Count blunders made by Abhishek in this game.
+    A blunder = leaving a piece hanging worth 3+ points (bishop, rook, queen).
+    Uses python-chess to simulate the game — no chess.com Game Review needed.
+    Returns number of blunders.
+    """
+    pgn_text = game_data.get("pgn", "")
+    if not pgn_text:
+        return 0
+
+    try:
+        import chess.pgn, io
+        game     = chess.pgn.read_game(io.StringIO(pgn_text))
+        if not game:
+            return 0
+
+        side     = get_my_side(game_data)
+        my_color = chess.WHITE if side == "white" else chess.BLACK
+        board    = game.board()
+        blunders = 0
+
+        for move in game.mainline_moves():
+            is_my_move = (board.turn == my_color)
+            if is_my_move:
+                # Check if I am leaving a piece hanging after this move
+                board.push(move)
+                # Look at all opponent responses — if any capture my piece for free
+                for opp_move in board.legal_moves:
+                    if board.is_capture(opp_move):
+                        captured = board.piece_at(opp_move.to_square)
+                        if captured and captured.color == my_color:
+                            val = PIECE_VALUES.get(captured.piece_type, 0)
+                            if val >= BLUNDER_THRESHOLD:
+                                # Check if I can recapture
+                                board2 = board.copy()
+                                board2.push(opp_move)
+                                can_recapture = any(
+                                    board2.is_capture(m) and
+                                    board2.piece_at(m.to_square) and
+                                    board2.piece_at(m.to_square).color != my_color
+                                    for m in board2.legal_moves
+                                    if board2.piece_at(m.to_square) and
+                                    PIECE_VALUES.get(board2.piece_at(m.to_square).piece_type,0) >= val
+                                )
+                                if not can_recapture:
+                                    blunders += 1
+                                    break   # count once per move
+            else:
+                board.push(move)
+
+        return blunders
+
+    except Exception:
+        return 0   # if parsing fails, don't skip the game
+
 def is_real_win(game):
     """Win by actual play — not abandonment/timeout."""
     side     = get_my_side(game)
@@ -54,6 +121,9 @@ def is_real_win(game):
     opp_result = game[opp_side]["result"]
     if opp_result in ABANDONMENT_CODES:
         return False, "abandonment"
+    # Quality filter — zero blunders only
+    if count_my_blunders(game) > 0:
+        return False, "blunder"
     return True, "ok"
 
 def main():
