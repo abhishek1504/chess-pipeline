@@ -322,22 +322,19 @@ def cmd_delete_all(youtube):
         return
 
     print(f"⚠️  This will permanently delete ALL {len(videos)} videos from your channel.")
-    print(f"   This cannot be undone.
-")
+    print(f"   This cannot be undone.")
     print("Videos that will be deleted:")
     for v in videos:
         print(f"  - {v['title'][:60]}")
         print(f"    {v['url']}")
 
-    print(f"
-Type 'DELETE ALL' to confirm: ", end="")
+    print("\nType 'DELETE ALL' to confirm: ", end="")
     confirm = input().strip()
     if confirm != "DELETE ALL":
         print("Cancelled — nothing deleted.")
         return
 
-    print(f"
-🗑️  Deleting {len(videos)} videos...")
+    print(f"\n🗑️  Deleting {len(videos)} videos...")
     deleted = 0
     failed  = 0
     for v in videos:
@@ -349,23 +346,20 @@ Type 'DELETE ALL' to confirm: ", end="")
             print(f"  ❌ Failed: {v['title'][:40]} — {e}")
             failed += 1
 
-    print(f"
-{'─'*55}")
+    print(f"\n{'─'*55}")
     print(f"✅ Deleted: {deleted} videos")
     if failed:
         print(f"❌ Failed:  {failed} videos")
 
     # Reset upload log
-    print(f"
-🔄 Resetting uploaded_games.json...")
+    print("\n🔄 Resetting uploaded_games.json...")
     with open("uploaded_games.json", "w") as f:
         json.dump([], f)
-    print(f"✅ Upload log cleared!")
-    print(f"
-💡 Now commit the reset log:")
-    print(f"   git add uploaded_games.json")
-    print(f"   git commit -m 'Fresh start — reset upload log'")
-    print(f"   git push origin main")
+    print("✅ Upload log cleared!")
+    print("\n💡 Now commit the reset log:")
+    print("   git add uploaded_games.json")
+    print("   git commit -m 'Fresh start — reset upload log'")
+    print("   git push origin main")
 
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "help"

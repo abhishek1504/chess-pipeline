@@ -89,6 +89,7 @@ def get_clocks_at_move(clocks, move_idx):
 
 # ── Config ────────────────────────────────────────────────────────────────────
 USERNAME   = "abhi15041984"
+PORTRAIT_MOVES  = 20    # Portrait/Shorts: only show last N moves
 FPS        = 1
 OUTPUT_DIR = "videos"
 PIECES_DIR = "pieces"
@@ -850,31 +851,47 @@ def generate_videos(game_data, all_pieces, land_path, port_path, game_dir):
                     confetti_particles=cp, confetti_fidx=cf,
                     winner_text=winner_text if cp else "")
 
-    # Opening hold — 2 frames
+    # Portrait: only last PORTRAIT_MOVES moves
+    port_start  = max(0, len(moves) - PORTRAIT_MOVES)
+    port_board  = game.board()
+    for mv in moves[:port_start]:
+        port_board.push(mv)
+
+    # Opening hold — 2 frames (landscape only; portrait starts at port_start)
     for _ in range(2):
         land_frames.append(make_landscape_frame(board, land_pieces, move_pairs, 0,
                            move=None, **common(0, None, 0)))
-        port_frames.append(make_portrait_frame(board, port_pieces, move_pairs, 0,
-                           move=None, **common(0, None, 0)))
+        # Portrait opening shows the board at port_start position
+        port_frames.append(make_portrait_frame(port_board, port_pieces, move_pairs, 0,
+                           move=None, **common(0, None, port_start)))
 
     # One frame per move
     for i, mv in enumerate(moves):
         board.push(mv)
         is_last = (i == len(moves)-1)
+
+        # Landscape — always add every move
         land_frames.append(make_landscape_frame(board, land_pieces, move_pairs, i+1,
                            move=mv, **common(i+1, mv, i+1)))
-        port_frames.append(make_portrait_frame(board, port_pieces, move_pairs, i+1,
-                           move=mv, **common(i+1, mv, i+1)))
+
+        # Portrait — only add frames from port_start onwards
+        if i >= port_start:
+            port_board.push(mv)
+            port_idx = i - port_start + 1   # relative index for portrait
+            port_frames.append(make_portrait_frame(port_board, port_pieces, move_pairs, port_idx,
+                               move=mv, **common(i+1, mv, i+1)))
+
         if (i+1) % 10 == 0:
             print(f"  ... {i+1}/{len(moves)} moves")
 
     # Animated confetti — CONFETTI_FRAMES frames
+    port_total = len(moves) - port_start   # total portrait moves shown
     for fi in range(CONFETTI_FRAMES):
         land_frames.append(make_landscape_frame(board, land_pieces, move_pairs, len(moves),
                            move=moves[-1] if moves else None,
                            **common(len(moves), None, len(moves),
                                     cp=land_particles, cf=fi)))
-        port_frames.append(make_portrait_frame(board, port_pieces, move_pairs, len(moves),
+        port_frames.append(make_portrait_frame(port_board, port_pieces, move_pairs, port_total,
                            move=moves[-1] if moves else None,
                            **common(len(moves), None, len(moves),
                                     cp=port_particles, cf=fi)))

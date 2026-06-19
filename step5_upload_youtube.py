@@ -460,18 +460,76 @@ def main():
             metadata    = parse_script(script_path)
 
             if not metadata["title"]:
-                # Fallback title if parsing fails
-                metadata["title"] = f"Chess Game — Road to 1000 | {CHANNEL_NAME} ♟️"
+                metadata["title"] = f"Chess Game — Road to 1000 | {CHANNEL_NAME}"
 
-            video_id = upload_video(youtube, vid_path, metadata, game_dir,
-                                       blitz_playlist, rapid_playlist)
-            url      = f"https://www.youtube.com/watch?v={video_id}"
+            base_title = metadata["title"]
+
+            # ── Upload landscape (full game) ──────────────────────────────
+            land_meta = dict(metadata)
+            land_meta["title"] = f"[FULL GAME] {base_title}"[:100]
+            land_meta["description"] = (
+                metadata["description"] +
+                "
+
+⚡ Watch key moments (Shorts): [link coming soon]"
+            )
+            print(f"  📺 Uploading landscape (full game)...")
+            land_id  = upload_video(youtube, vid_path, land_meta, game_dir,
+                                    blitz_playlist, rapid_playlist)
+            land_url = f"https://www.youtube.com/watch?v={land_id}"
+            print(f"  ✅ Landscape: {land_url}")
+
+            # ── Upload portrait (last 20 moves) ───────────────────────────
+            port_url = None
+            if port_path and os.path.exists(port_path):
+                port_meta = dict(metadata)
+                port_meta["title"] = f"[SHORTS] {base_title}"[:100]
+                port_meta["description"] = (
+                    f"Last 20 moves of this game.
+
+"
+                    f"Watch full game here: {land_url}
+
+"
+                    + metadata["description"]
+                )
+                print(f"  📱 Uploading portrait (last 20 moves / Shorts)...")
+                time.sleep(3)
+                port_id  = upload_video(youtube, port_path, port_meta, game_dir,
+                                        blitz_playlist, rapid_playlist)
+                port_url = f"https://www.youtube.com/watch?v={port_id}"
+                print(f"  ✅ Portrait: {port_url}")
+
+                # Update landscape description to include Shorts link
+                try:
+                    updated_desc = land_meta["description"].replace(
+                        "[link coming soon]", port_url
+                    )
+                    youtube.videos().update(
+                        part="snippet",
+                        body={
+                            "id": land_id,
+                            "snippet": {
+                                "title":       land_meta["title"],
+                                "description": updated_desc,
+                                "tags":        land_meta["tags"],
+                                "categoryId":  CATEGORY_ID,
+                            }
+                        }
+                    ).execute()
+                    print(f"  🔗 Cross-linked: landscape ↔ portrait")
+                except Exception as e:
+                    print(f"  ⚠️  Cross-link update failed: {e}")
+            else:
+                print(f"  ⚠️  portrait.mp4 not found — skipping Shorts upload")
+
+            url = land_url
             results.append({"name": name, "success": True, "url": url, "error": None})
 
-            # Small delay between uploads to avoid quota issues
+            # Delay before next game
             if i < len(to_upload) - 1:
-                print(f"  ⏸️  Waiting 3s before next upload...")
-                time.sleep(3)
+                print(f"  ⏸️  Waiting 5s before next game...")
+                time.sleep(5)
 
         except HttpError as e:
             error = f"YouTube API error: {e.resp.status} — {e.content.decode()[:200]}"
