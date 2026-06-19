@@ -168,8 +168,8 @@ def main():
         print(f"{len(games)} games, {len(wins)} wins ✅")
         time.sleep(0.5)
 
-    # Sort newest first
-    all_wins.sort(key=lambda g: g.get("end_time", 0), reverse=True)
+    # Sort oldest first — chronological story for the channel
+    all_wins.sort(key=lambda g: g.get("end_time", 0), reverse=False)
 
     print(f"\n{'─'*50}")
     print(f"📊 Total games scanned: {total_games}")
