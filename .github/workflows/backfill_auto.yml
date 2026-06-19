@@ -2,7 +2,7 @@ name: Chess Backfill Auto (Daily until done)
 
 on:
   schedule:
-    # Run daily at 11:30 PM IST (6 PM UTC) — 30 mins after main pipeline
+    # 11:30 PM IST = 6:00 PM UTC — 30 mins after daily pipeline
     - cron: '0 18 * * *'
   workflow_dispatch:
     inputs:
@@ -40,53 +40,53 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      # ── Fetch all remaining unuploaded wins for the year ─────────────────
-      - name: Fetch remaining wins
+      # ── Fetch next batch of unuploaded quality wins ───────────────────────
+      - name: Fetch remaining wins (oldest first)
         run: python backfill.py ${{ github.event.inputs.year || '2026' }}
         env:
           CHESS_USERNAME: abhi15041984
           BACKFILL_AUTO:  "true"
           MAX_UPLOADS:    ${{ github.event.inputs.max_uploads || '6' }}
 
-      # ── Check if anything left to process ────────────────────────────────
-      - name: Check for remaining games
+      # ── Check if anything to process ─────────────────────────────────────
+      - name: Check for games
         id: check
         run: |
           COUNT=$(python -c 'import json; print(len(json.load(open("won_games.json"))))')
           echo "count=$COUNT" >> $GITHUB_OUTPUT
           if [ "$COUNT" -gt "0" ]; then
             echo "has_games=true" >> $GITHUB_OUTPUT
-            echo "✅ $COUNT games remaining to upload today"
+            echo "✅ $COUNT quality games to process today"
           else
             echo "has_games=false" >> $GITHUB_OUTPUT
-            echo "🎉 All games for ${{ github.event.inputs.year || '2026' }} are uploaded!"
+            echo "🎉 All ${{ github.event.inputs.year || '2026' }} games uploaded!"
           fi
 
-      # ── Generate videos ───────────────────────────────────────────────────
+      # ── Generate landscape + portrait videos ──────────────────────────────
       - name: Generate videos
         if: steps.check.outputs.has_games == 'true'
         run: python step2_generate_video.py
         env:
           MAX_UPLOADS: ${{ github.event.inputs.max_uploads || '6' }}
 
-      # ── Generate scripts ──────────────────────────────────────────────────
+      # ── Generate titles, descriptions, hashtags ───────────────────────────
       - name: Generate scripts
         if: steps.check.outputs.has_games == 'true'
         run: python step3_generate_scripts.py
         env:
           MAX_UPLOADS: ${{ github.event.inputs.max_uploads || '6' }}
 
-      # ── Upload to YouTube ─────────────────────────────────────────────────
+      # ── Upload both videos to YouTube ─────────────────────────────────────
       - name: Upload to YouTube
         if: steps.check.outputs.has_games == 'true'
         run: python step5_upload_youtube.py
         env:
-          YOUTUBE_TOKEN:    ${{ secrets.YOUTUBE_TOKEN }}
+          YOUTUBE_TOKEN:   ${{ secrets.YOUTUBE_TOKEN }}
           PLAYLIST_BLITZ:  ${{ secrets.PLAYLIST_BLITZ }}
           PLAYLIST_RAPID:  ${{ secrets.PLAYLIST_RAPID }}
-          MAX_UPLOADS:   ${{ github.event.inputs.max_uploads || '6' }}
+          MAX_UPLOADS:     ${{ github.event.inputs.max_uploads || '6' }}
 
-      # ── Summary ───────────────────────────────────────────────────────────
+      # ── Commit upload log ─────────────────────────────────────────────────
       - name: Commit upload log
         if: steps.check.outputs.has_games == 'true'
         run: |
@@ -96,12 +96,12 @@ jobs:
           git diff --staged --quiet || git commit -m "Update upload log [skip ci]"
           git push || true
 
+      # ── Summary ───────────────────────────────────────────────────────────
       - name: Summary
         run: |
-          COUNT=${{ steps.check.outputs.count }}
-          if [ "$COUNT" -eq "0" ]; then
-            echo "🎉 BACKFILL COMPLETE — All 2026 wins uploaded to YouTube!"
-          else
+          if [ "${{ steps.check.outputs.has_games }}" = "true" ]; then
             echo "✅ Uploaded ${{ github.event.inputs.max_uploads || '6' }} games today"
             echo "📅 Will continue tomorrow at 11:30 PM IST automatically"
+          else
+            echo "🎉 BACKFILL COMPLETE — All games uploaded!"
           fi

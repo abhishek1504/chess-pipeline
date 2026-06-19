@@ -1,20 +1,20 @@
-name: Chess Backfill Pipeline
+name: Chess Backfill (Manual - Specific Month)
 
 on:
   workflow_dispatch:
     inputs:
       year:
-        description: 'Year to backfill (e.g. 2026)'
+        description: 'Year (e.g. 2026)'
         required: true
         default: '2026'
         type: string
       month:
-        description: 'Month to backfill (e.g. 06 for June) — leave empty for full year'
+        description: 'Month (e.g. 01 for Jan, 06 for June) — leave empty for full year'
         required: false
         default: ''
         type: string
       max_uploads:
-        description: 'Max videos to generate AND upload (YouTube allows ~6/day)'
+        description: 'Max videos to generate and upload'
         required: false
         default: '6'
         type: string
@@ -42,8 +42,7 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      # ── Step 1: Fetch historical wins (limited to max_uploads) ───────────
-      - name: Fetch historical wins
+      - name: Fetch games
         run: |
           if [ -z "${{ github.event.inputs.month }}" ]; then
             python backfill.py ${{ github.event.inputs.year }}
@@ -55,7 +54,6 @@ jobs:
           BACKFILL_AUTO:  "true"
           MAX_UPLOADS:    ${{ github.event.inputs.max_uploads }}
 
-      # ── Check for games ───────────────────────────────────────────────────
       - name: Check for games
         id: check
         run: |
@@ -63,38 +61,44 @@ jobs:
           echo "count=$COUNT" >> $GITHUB_OUTPUT
           if [ "$COUNT" -gt "0" ]; then
             echo "has_games=true" >> $GITHUB_OUTPUT
-            echo "✅ $COUNT wins queued for processing!"
+            echo "✅ $COUNT quality games found"
           else
             echo "has_games=false" >> $GITHUB_OUTPUT
-            echo "😴 No wins found."
+            echo "😴 No quality games found for this period"
           fi
 
-      # ── Step 2: Generate videos (only for queued games) ──────────────────
       - name: Generate videos
         if: steps.check.outputs.has_games == 'true'
         run: python step2_generate_video.py
         env:
           MAX_UPLOADS: ${{ github.event.inputs.max_uploads }}
 
-      # ── Step 3: Generate scripts ──────────────────────────────────────────
-      - name: Generate scripts and metadata
+      - name: Generate scripts
         if: steps.check.outputs.has_games == 'true'
         run: python step3_generate_scripts.py
         env:
           MAX_UPLOADS: ${{ github.event.inputs.max_uploads }}
 
-      # ── Step 5: Upload to YouTube ─────────────────────────────────────────
       - name: Upload to YouTube
         if: steps.check.outputs.has_games == 'true'
         run: python step5_upload_youtube.py
         env:
-          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
-          MAX_UPLOADS:   ${{ github.event.inputs.max_uploads }}
+          YOUTUBE_TOKEN:   ${{ secrets.YOUTUBE_TOKEN }}
+          PLAYLIST_BLITZ:  ${{ secrets.PLAYLIST_BLITZ }}
+          PLAYLIST_RAPID:  ${{ secrets.PLAYLIST_RAPID }}
+          MAX_UPLOADS:     ${{ github.event.inputs.max_uploads }}
 
-      - name: Summary
+      - name: Commit upload log
         if: steps.check.outputs.has_games == 'true'
         run: |
-          echo "🏁 Backfill complete!"
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add uploaded_games.json || true
+          git diff --staged --quiet || git commit -m "Update upload log [skip ci]"
+          git push || true
+
+      - name: Summary
+        run: |
+          echo "🏁 Done!"
           echo "Period: ${{ github.event.inputs.year }}/${{ github.event.inputs.month }}"
-          echo "Videos generated: $(find videos/ -name 'portrait.mp4' 2>/dev/null | wc -l)"
-          echo "Uploaded: $(find videos/ -name 'youtube_upload.json' 2>/dev/null | wc -l)"
+          echo "Videos: $(find videos/ -name 'landscape.mp4' 2>/dev/null | wc -l)"

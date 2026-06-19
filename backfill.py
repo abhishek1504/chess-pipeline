@@ -31,24 +31,118 @@ def get_my_side(game):
     return "white" if game["white"]["username"].lower() == USERNAME.lower() else "black"
 
 
-# ── Blunder detection ─────────────────────────────────────────────────────────
 
-PIECE_VALUES = {
-    chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3,
-    chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0
+# ── Game quality estimation (accuracy proxy) ──────────────────────────────────
+# Estimates game quality without chess.com Game Review
+# Based on: blunders, mistakes, material hanging, move efficiency
+#
+# Quality score 0-100 (roughly maps to chess.com accuracy):
+#   90-100 = excellent (≈ 90%+ accuracy)
+#   75-89  = good      (≈ 75-90% accuracy)
+#   60-74  = ok        (≈ 60-75% accuracy)  ← MIN_QUALITY default
+#   below 60 = poor
+
+MIN_QUALITY     = 70    # minimum quality score to upload (≈ 70% accuracy proxy)
+PIECE_VALUES    = {
+    chess.PAWN:1, chess.KNIGHT:3, chess.BISHOP:3,
+    chess.ROOK:5, chess.QUEEN:9, chess.KING:0
 }
-BLUNDER_THRESHOLD = 3   # losing 3+ points in one move = blunder (bishop or better)
 
-def count_my_blunders(game_data):
+def estimate_game_quality(game_data):
     """
-    Count blunders made by Abhishek in this game.
-    A blunder = leaving a piece hanging worth 3+ points (bishop, rook, queen).
-    Uses python-chess to simulate the game — no chess.com Game Review needed.
-    Returns number of blunders.
+    Estimate game quality 0-100 as a proxy for chess.com accuracy.
+    Analyses Abhishek's moves only.
+
+    Penalties:
+    - Hanging a queen  (9pts): -25 points
+    - Hanging a rook   (5pts): -18 points
+    - Hanging a bishop/knight (3pts): -12 points
+    - Hanging a pawn   (1pt):  -4 points
+    - Missing a free capture worth 5+: -8 points
+
+    Score starts at 100, penalties applied per bad move.
     """
     pgn_text = game_data.get("pgn", "")
     if not pgn_text:
-        return 0
+        return 100  # no data = don't penalise
+
+    try:
+        import chess.pgn as cpgn, io
+        game     = cpgn.read_game(io.StringIO(pgn_text))
+        if not game:
+            return 100
+
+        side     = get_my_side(game_data)
+        my_color = chess.WHITE if side == "white" else chess.BLACK
+        board    = game.board()
+        score    = 100
+        my_moves = 0
+
+        for move in game.mainline_moves():
+            is_my = (board.turn == my_color)
+
+            if is_my:
+                my_moves += 1
+
+                # Check 1: Am I missing a free capture?
+                best_free = 0
+                for candidate in board.legal_moves:
+                    if board.is_capture(candidate):
+                        target = board.piece_at(candidate.to_square)
+                        if target and target.color != my_color:
+                            val = PIECE_VALUES.get(target.piece_type, 0)
+                            # Check if it's safe to take
+                            b2 = board.copy()
+                            b2.push(candidate)
+                            attacked = b2.is_attacked_by(
+                                not my_color, candidate.to_square
+                            )
+                            if not attacked and val > best_free:
+                                best_free = val
+
+                board.push(move)
+
+                # Penalty for missing free capture
+                if best_free >= 5:
+                    score -= 8
+                elif best_free >= 3:
+                    score -= 4
+
+                # Check 2: Did I just hang a piece?
+                for opp_mv in board.legal_moves:
+                    if not board.is_capture(opp_mv):
+                        continue
+                    victim = board.piece_at(opp_mv.to_square)
+                    if not victim or victim.color != my_color:
+                        continue
+                    val = PIECE_VALUES.get(victim.piece_type, 0)
+                    if val == 0:
+                        continue
+
+                    # Can I recapture?
+                    b2 = board.copy()
+                    b2.push(opp_mv)
+                    can_recap = any(
+                        b2.is_capture(m) and b2.piece_at(m.to_square) and
+                        b2.piece_at(m.to_square).color != my_color and
+                        PIECE_VALUES.get(b2.piece_at(m.to_square).piece_type,0) >= val
+                        for m in b2.legal_moves
+                    )
+                    if not can_recap:
+                        # Penalty based on piece value
+                        if val >= 9:   score -= 25
+                        elif val >= 5: score -= 18
+                        elif val >= 3: score -= 12
+                        else:          score -= 4
+                        break   # count once per move
+
+            else:
+                board.push(move)
+
+        return max(0, min(100, score))
+
+    except Exception:
+        return 100  # parse error = don't penalise
 
     try:
         import chess.pgn, io
@@ -102,8 +196,12 @@ def is_real_win(game):
         return False
     if game[opp_side]["result"] in ABANDONMENT:
         return False
-    # Quality filter — zero blunders only
-    if count_my_blunders(game) > 0:
+    # Quality filter — estimated accuracy >= MIN_QUALITY
+    quality = estimate_game_quality(game)
+    if quality < MIN_QUALITY:
+        return False
+    # Quality filter
+    if estimate_game_quality(game) < MIN_QUALITY:
         return False
     return True
 

@@ -1,7 +1,8 @@
-name: Chess Content Pipeline
+name: Chess Content Pipeline (Daily)
 
 on:
   schedule:
+    # 11:00 PM IST = 5:30 PM UTC
     - cron: '30 17 * * *'
   workflow_dispatch:
 
@@ -28,11 +29,13 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
+      # ── Step 1: Fetch today's won games ───────────────────────────────────
       - name: Fetch today's won games
         run: python watcher.py
         env:
           CHESS_USERNAME: abhi15041984
 
+      # ── Check if any games passed quality filter ──────────────────────────
       - name: Check for games
         id: check
         run: |
@@ -40,35 +43,50 @@ jobs:
           echo "count=$COUNT" >> $GITHUB_OUTPUT
           if [ "$COUNT" -gt "0" ]; then
             echo "has_games=true" >> $GITHUB_OUTPUT
-            echo "✅ Found $COUNT new wins today!"
+            echo "✅ Found $COUNT quality wins today!"
           else
             echo "has_games=false" >> $GITHUB_OUTPUT
-            echo "😴 No new wins today — pipeline stops here."
+            echo "😴 No quality wins today — pipeline stops here."
           fi
 
+      # ── Step 2: Generate landscape + portrait videos ──────────────────────
       - name: Generate videos
         if: steps.check.outputs.has_games == 'true'
         run: python step2_generate_video.py
+        env:
+          MAX_UPLOADS: "6"
 
+      # ── Step 3: Generate titles, descriptions, hashtags ───────────────────
       - name: Generate scripts and metadata
         if: steps.check.outputs.has_games == 'true'
         run: python step3_generate_scripts.py
+        env:
+          MAX_UPLOADS: "6"
 
+      # ── Step 5: Upload landscape + portrait to YouTube ────────────────────
       - name: Upload to YouTube
         if: steps.check.outputs.has_games == 'true'
         run: python step5_upload_youtube.py
         env:
-          YOUTUBE_TOKEN:    ${{ secrets.YOUTUBE_TOKEN }}
+          YOUTUBE_TOKEN:   ${{ secrets.YOUTUBE_TOKEN }}
           PLAYLIST_BLITZ:  ${{ secrets.PLAYLIST_BLITZ }}
           PLAYLIST_RAPID:  ${{ secrets.PLAYLIST_RAPID }}
+          MAX_UPLOADS:     "6"
 
+      # ── Commit upload log so next run knows what was uploaded ─────────────
+      - name: Commit upload log
+        if: steps.check.outputs.has_games == 'true'
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add uploaded_games.json || true
+          git diff --staged --quiet || git commit -m "Update upload log [skip ci]"
+          git push || true
+
+      # ── Summary ───────────────────────────────────────────────────────────
       - name: Summary
         if: steps.check.outputs.has_games == 'true'
         run: |
-          echo "🏁 Pipeline complete!"
-          echo "Videos generated:"
-          find videos/ -name "landscape.mp4" 2>/dev/null | wc -l
-          echo "Scripts generated:"
-          find videos/ -name "script.txt" 2>/dev/null | wc -l
-          echo "YouTube uploads:"
-          find videos/ -name "youtube_upload.json" 2>/dev/null | wc -l
+          echo "🏁 Daily pipeline complete!"
+          echo "Videos generated: $(find videos/ -name 'landscape.mp4' 2>/dev/null | wc -l)"
+          echo "Scripts generated: $(find videos/ -name 'script.txt' 2>/dev/null | wc -l)"

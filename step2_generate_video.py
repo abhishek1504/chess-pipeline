@@ -685,7 +685,7 @@ def make_portrait_frame(board, pieces, move_pairs, cur_idx,
     W, H = 1080, 1920
     img  = Image.new("RGB", (W, H), DARK_C)
     draw = ImageDraw.Draw(img)
-    F    = make_fonts(2.0)
+    F    = make_fonts(1.3)
 
     draw.rectangle([0,0,W,5],   fill=AMBER)
     draw.rectangle([0,H-5,W,H], fill=AMBER)
@@ -708,20 +708,20 @@ def make_portrait_frame(board, pieces, move_pairs, cur_idx,
     # Players side by side
     hw = pw // 2 - 10
     # White box
-    draw.rounded_rectangle([px, py, px+hw, py+130], radius=8, fill=PANEL_C)
-    draw.text((px+10, py+12), "OPPONENT", fill=GRAY_C,  font=F["xs"])
-    draw.text((px+10, py+42), top_name,   fill=WHITE_C,  font=F["sm"])
-    draw.text((px+10, py+90), f"Rating: {top_rating}", fill=AMBER, font=F["sm"])
-    draw.text((px+hw-90, py+90), top_clk, fill=AMBER, font=F["sm"])
+    draw.rounded_rectangle([px, py, px+hw, py+90], radius=8, fill=PANEL_C)
+    draw.text((px+10, py+10), "OPPONENT", fill=GRAY_C,  font=F["xs"])
+    draw.text((px+10, py+30), top_name,   fill=WHITE_C,  font=F["sm"])
+    draw.text((px+10, py+58), f"⭐ {top_rating}", fill=AMBER, font=F["sm"])
+    draw.text((px+hw-70, py+58), top_clk, fill=AMBER, font=F["sm"])
     # You box
     bx = px + hw + 20
-    draw.rounded_rectangle([bx, py, bx+hw, py+130], radius=8, fill=PANEL_C)
-    draw.text((bx+10, py+12), "YOU",      fill=AMBER,   font=F["xs"])
-    draw.text((bx+10, py+42), bot_name,   fill=WHITE_C,  font=F["sm"])
-    draw.text((bx+10, py+90), f"Rating: {bot_rating}", fill=AMBER, font=F["sm"])
-    draw.text((bx+hw-90, py+90), bot_clk, fill=AMBER, font=F["sm"])
+    draw.rounded_rectangle([bx, py, bx+hw, py+90], radius=8, fill=PANEL_C)
+    draw.text((bx+10, py+10), "YOU ♟",   fill=AMBER,   font=F["xs"])
+    draw.text((bx+10, py+30), bot_name,   fill=WHITE_C,  font=F["sm"])
+    draw.text((bx+10, py+58), f"⭐ {bot_rating}", fill=AMBER, font=F["sm"])
+    draw.text((bx+hw-70, py+58), bot_clk, fill=AMBER, font=F["sm"])
 
-    py += 150
+    py += 110
 
     # Opening name
     if meta and meta["opening"]:
@@ -752,7 +752,7 @@ def make_portrait_frame(board, pieces, move_pairs, cur_idx,
 
     # Check / turn
     if board.is_check():
-        draw.text((W//2, py), "CHECK!", fill=CHECK_CLR, font=F["sm"], anchor="mm")
+        draw.text((W//2, py), "⚠  CHECK!", fill=CHECK_CLR, font=F["sm"], anchor="mm")
     else:
         tc = (220,220,220) if board.turn==chess.WHITE else (160,160,160)
         draw.text((W//2, py),
@@ -760,9 +760,8 @@ def make_portrait_frame(board, pieces, move_pairs, cur_idx,
                   fill=tc, font=F["sm"], anchor="mm")
     py += 36
 
-    # Move list — use bigger font for portrait
-    F_moves = make_fonts(2.2)
-    draw_move_list(draw, move_pairs, cur_idx, px, py, pw, H-py-80, F_moves)
+    # Move list
+    draw_move_list(draw, move_pairs, cur_idx, px, py, pw, H-py-60, F)
 
     draw.text((W//2, H-40), "@TheThinkingAthlete", fill=(55,55,60),
               font=F["xs"], anchor="mm")

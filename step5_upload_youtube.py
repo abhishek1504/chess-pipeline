@@ -409,11 +409,11 @@ def main():
 
     ready = []
     for g in game_folders:
-        # Upload portrait only (for YouTube Shorts / vertical video)
-        vid = os.path.join(g, "portrait.mp4")
-        scr = os.path.join(g, "script.txt")
-        if os.path.exists(vid) and os.path.exists(scr):
-            ready.append((g, vid))
+        land = os.path.join(g, "landscape.mp4")
+        port = os.path.join(g, "portrait.mp4")
+        scr  = os.path.join(g, "script.txt")
+        if os.path.exists(land) and os.path.exists(scr):
+            ready.append((g, land, port if os.path.exists(port) else None))
 
     if not ready:
         print(f"❌ No game folders ready for upload.")
@@ -421,7 +421,7 @@ def main():
         sys.exit(1)
 
     # Filter already uploaded
-    to_upload = [(g,v) for g,v in ready if not already_uploaded(g)]
+    to_upload = [(g,l,p) for g,l,p in ready if not already_uploaded(g)]
     skipped   = len(ready) - len(to_upload)
 
     if not to_upload:
@@ -431,6 +431,8 @@ def main():
     # Apply MAX_UPLOADS limit
     if MAX_UPLOADS:
         to_upload = to_upload[:MAX_UPLOADS]
+
+    print(f"  Landscape + Portrait per game")
 
     print(f"🎬 YouTube Upload — {CHANNEL_NAME}")
     print(f"{'─'*55}")
@@ -449,7 +451,7 @@ def main():
     print()
 
     results = []
-    for i, (game_dir, vid_path) in enumerate(to_upload):
+    for i, (game_dir, vid_path, port_path) in enumerate(to_upload):
         name = os.path.basename(game_dir)
         print(f"[{i+1:02d}/{len(to_upload)}] {name}")
 

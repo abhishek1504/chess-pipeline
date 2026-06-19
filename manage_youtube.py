@@ -7,6 +7,7 @@ Commands:
     python manage_youtube.py dupes            — find duplicate videos
     python manage_youtube.py delete <video_id> — delete a specific video
     python manage_youtube.py cleanup          — interactive duplicate cleanup
+    python manage_youtube.py delete_all       — delete ALL videos (fresh start)
 
 Requirements:
     pip install google-auth google-auth-oauthlib google-api-python-client
@@ -312,6 +313,60 @@ def cmd_cleanup(youtube):
     print(f"   Deleted: {deleted} videos")
     print(f"   Skipped: {skipped} groups")
 
+def cmd_delete_all(youtube):
+    """Delete ALL videos from the channel — fresh start."""
+    videos = get_all_videos(youtube)
+
+    if not videos:
+        print("✅ No videos found — channel is already empty!")
+        return
+
+    print(f"⚠️  This will permanently delete ALL {len(videos)} videos from your channel.")
+    print(f"   This cannot be undone.
+")
+    print("Videos that will be deleted:")
+    for v in videos:
+        print(f"  - {v['title'][:60]}")
+        print(f"    {v['url']}")
+
+    print(f"
+Type 'DELETE ALL' to confirm: ", end="")
+    confirm = input().strip()
+    if confirm != "DELETE ALL":
+        print("Cancelled — nothing deleted.")
+        return
+
+    print(f"
+🗑️  Deleting {len(videos)} videos...")
+    deleted = 0
+    failed  = 0
+    for v in videos:
+        try:
+            youtube.videos().delete(id=v["id"]).execute()
+            print(f"  ✅ Deleted: {v['title'][:55]}")
+            deleted += 1
+        except HttpError as e:
+            print(f"  ❌ Failed: {v['title'][:40]} — {e}")
+            failed += 1
+
+    print(f"
+{'─'*55}")
+    print(f"✅ Deleted: {deleted} videos")
+    if failed:
+        print(f"❌ Failed:  {failed} videos")
+
+    # Reset upload log
+    print(f"
+🔄 Resetting uploaded_games.json...")
+    with open("uploaded_games.json", "w") as f:
+        json.dump([], f)
+    print(f"✅ Upload log cleared!")
+    print(f"
+💡 Now commit the reset log:")
+    print(f"   git add uploaded_games.json")
+    print(f"   git commit -m 'Fresh start — reset upload log'")
+    print(f"   git push origin main")
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "help"
 
@@ -345,6 +400,8 @@ Examples:
         cmd_delete(youtube, sys.argv[2])
     elif cmd == "cleanup":
         cmd_cleanup(youtube)
+    elif cmd == "delete_all":
+        cmd_delete_all(youtube)
     else:
         print(f"❌ Unknown command: {cmd}")
         print("   Run: python manage_youtube.py help")
