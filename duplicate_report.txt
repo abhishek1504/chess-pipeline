@@ -1,0 +1,173 @@
+Duplicate Report — 2026-06-19 13:32
+Channel: Indian Thinking Athlete
+================================================================================
+
+GROUP: [blitz_checkmate_moves]
+  [DELETE] BLITZ | Checkmate in 55 Moves | 644 ♟️
+         https://www.youtube.com/watch?v=RHYZTtfH4x0
+         ID: RHYZTtfH4x0 | Views: 4 | 2026-06-16 11:30
+  [DELETE] BLITZ | Checkmate in 45 Moves | 660 ♟️
+         https://www.youtube.com/watch?v=UGrSMdEB1tg
+         ID: UGrSMdEB1tg | Views: 38 | 2026-06-17 19:37
+  [DELETE] BLITZ | Checkmate in 31 Moves | 652 ♟️
+         https://www.youtube.com/watch?v=LH9YtF1lrQY
+         ID: LH9YtF1lrQY | Views: 4 | 2026-06-17 19:37
+  [DELETE] BLITZ | Checkmate in 60 Moves | 699 ♟️
+         https://www.youtube.com/watch?v=9R8c2gYhEzY
+         ID: 9R8c2gYhEzY | Views: 0 | 2026-06-19 06:13
+  [KEEP] BLITZ | Checkmate in 75 Moves | 684 ♟️
+         https://www.youtube.com/watch?v=_0ApDKTFad4
+         ID: _0ApDKTFad4 | Views: 7 | 2026-06-19 06:13
+
+GROUP: [blitz_resignation_rated_road]
+  [DELETE] BLITZ | Resignation | Rated 628 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=jeA0OnZ8UU8
+         ID: jeA0OnZ8UU8 | Views: 6 | 2026-06-16 11:30
+  [DELETE] BLITZ | Resignation | Rated 620 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=x7sb0gDN2ys
+         ID: x7sb0gDN2ys | Views: 2 | 2026-06-16 11:30
+  [DELETE] BLITZ | Resignation | Rated 612 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=WseT7gPgx_4
+         ID: WseT7gPgx_4 | Views: 3 | 2026-06-16 11:31
+  [DELETE] BLITZ | Resignation | Rated 612 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=gUmNHSHUp_0
+         ID: gUmNHSHUp_0 | Views: 5 | 2026-06-16 11:31
+  [DELETE] BLITZ | Resignation | Rated 676 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=atA8ryspxiE
+         ID: atA8ryspxiE | Views: 28 | 2026-06-17 19:37
+  [DELETE] BLITZ | Resignation | Rated 668 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=l7OZtit_MNA
+         ID: l7OZtit_MNA | Views: 32 | 2026-06-17 19:37
+  [DELETE] BLITZ | Resignation | Rated 660 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=1mvH6VgJk6w
+         ID: 1mvH6VgJk6w | Views: 12 | 2026-06-17 19:37
+  [DELETE] BLITZ | Resignation | Rated 643 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=1bUEFZTXidA
+         ID: 1bUEFZTXidA | Views: 27 | 2026-06-17 19:37
+  [KEEP] BLITZ | Resignation | Rated 683 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=t2Rz0ZtQDEg
+         ID: t2Rz0ZtQDEg | Views: 0 | 2026-06-19 06:13
+
+GROUP: [checkmate_moves_chesscom]
+  [DELETE] Checkmate in 54 Moves | Road to 1000 | Chess.com ♟️
+         https://www.youtube.com/watch?v=2nsszFD8TEY
+         ID: 2nsszFD8TEY | Views: 258 | 2026-06-16 06:35
+  [DELETE] Checkmate in 45 Moves | Road to 1000 | Chess.com ♟️
+         https://www.youtube.com/watch?v=-MyQJN_TyxA
+         ID: -MyQJN_TyxA | Views: 552 | 2026-06-16 06:35
+  [DELETE] Checkmate in 55 Moves | Road to 1000 | Chess.com ♟️
+         https://www.youtube.com/watch?v=UWZXVdSWzwE
+         ID: UWZXVdSWzwE | Views: 34 | 2026-06-16 11:14
+  [KEEP] Checkmate in 78 Moves | Road to 1000 | Chess.com ♟️
+         https://www.youtube.com/watch?v=bea9SA1sGhM
+         ID: bea9SA1sGhM | Views: 5 | 2026-06-16 11:15
+
+GROUP: [rapid_checkmate]
+  [DELETE] RAPID | Checkmate in 109 Moves | 829 ♟️
+         https://www.youtube.com/watch?v=je-9fN7aNYw
+         ID: je-9fN7aNYw | Views: 5 | 2026-06-16 15:12
+  [KEEP] RAPID | Checkmate in 109 Moves | 829 ♟️
+         https://www.youtube.com/watch?v=Il7SDLiFJh8
+         ID: Il7SDLiFJh8 | Views: 362 | 2026-06-16 17:55
+
+GROUP: [rapid_checkmate_moves]
+  [DELETE] RAPID | Checkmate in 78 Moves | 878 ♟️
+         https://www.youtube.com/watch?v=TVhW79NiTCM
+         ID: TVhW79NiTCM | Views: 5 | 2026-06-16 11:31
+  [DELETE] RAPID | Checkmate in 46 Moves | 845 ♟️
+         https://www.youtube.com/watch?v=7ypoFriIHdA
+         ID: 7ypoFriIHdA | Views: 4 | 2026-06-16 15:12
+  [DELETE] RAPID | Checkmate in 94 Moves | 838 ♟️
+         https://www.youtube.com/watch?v=P-NDP_aXwSE
+         ID: P-NDP_aXwSE | Views: 5 | 2026-06-16 15:12
+  [DELETE] RAPID | Checkmate in 46 Moves | 845 ♟️
+         https://www.youtube.com/watch?v=WM33jSQ_nik
+         ID: WM33jSQ_nik | Views: 107 | 2026-06-16 17:55
+  [DELETE] RAPID | Checkmate in 94 Moves | 838 ♟️
+         https://www.youtube.com/watch?v=winsdQNDBhE
+         ID: winsdQNDBhE | Views: 245 | 2026-06-16 17:55
+  [DELETE] RAPID | Checkmate in 21 Moves | 820 ♟️
+         https://www.youtube.com/watch?v=gEVnC5BRvn8
+         ID: gEVnC5BRvn8 | Views: 0 | 2026-06-17 19:37
+  [DELETE] RAPID | Checkmate in 33 Moves | 845 ♟️
+         https://www.youtube.com/watch?v=iBgmeluYWQY
+         ID: iBgmeluYWQY | Views: 76 | 2026-06-17 19:37
+  [DELETE] RAPID | Checkmate in 46 Moves | 845 ♟️
+         https://www.youtube.com/watch?v=SyPYbBC895w
+         ID: SyPYbBC895w | Views: 24 | 2026-06-18 04:44
+  [DELETE] RAPID | Checkmate in 92 Moves | 812 ♟️
+         https://www.youtube.com/watch?v=0E_98NKAXWI
+         ID: 0E_98NKAXWI | Views: 13 | 2026-06-19 06:13
+  [DELETE] RAPID | Checkmate in 96 Moves | 820 ♟️
+         https://www.youtube.com/watch?v=bqyz5aO8oj8
+         ID: bqyz5aO8oj8 | Views: 7 | 2026-06-19 06:13
+  [DELETE] RAPID | Checkmate in 77 Moves | 819 ♟️
+         https://www.youtube.com/watch?v=TYbFBNqp8Ls
+         ID: TYbFBNqp8Ls | Views: 8 | 2026-06-19 06:13
+  [KEEP] RAPID | Checkmate in 82 Moves | 811 ♟️
+         https://www.youtube.com/watch?v=4R9tD9Zq1z4
+         ID: 4R9tD9Zq1z4 | Views: 12 | 2026-06-19 06:13
+
+GROUP: [rapid_resignation_rated_road]
+  [DELETE] RAPID | Resignation | Rated 829 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=2NLZjDhFLKk
+         ID: 2NLZjDhFLKk | Views: 7 | 2026-06-16 15:12
+  [DELETE] RAPID | Resignation | Rated 821 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=mpSWQNp3nkA
+         ID: mpSWQNp3nkA | Views: 4 | 2026-06-16 15:13
+  [DELETE] RAPID | Resignation | Rated 813 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=5otzjPjPLQI
+         ID: 5otzjPjPLQI | Views: 3 | 2026-06-16 15:13
+  [DELETE] RAPID | Resignation | Rated 829 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=7U3DaeoUKA8
+         ID: 7U3DaeoUKA8 | Views: 90 | 2026-06-16 17:56
+  [DELETE] RAPID | Resignation | Rated 821 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=IMvp1H2xQ1A
+         ID: IMvp1H2xQ1A | Views: 124 | 2026-06-16 17:56
+  [DELETE] RAPID | Resignation | Rated 813 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=xLY8xS9ra6Q
+         ID: xLY8xS9ra6Q | Views: 113 | 2026-06-16 17:56
+  [DELETE] RAPID | Resignation | Rated 837 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=8CKaB5GtL4A
+         ID: 8CKaB5GtL4A | Views: 38 | 2026-06-17 19:37
+  [DELETE] RAPID | Resignation | Rated 812 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=EIng1xr72Fw
+         ID: EIng1xr72Fw | Views: 0 | 2026-06-19 06:13
+  [DELETE] RAPID | Resignation | Rated 828 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=fpoYLak1cqM
+         ID: fpoYLak1cqM | Views: 4 | 2026-06-19 06:13
+  [KEEP] RAPID | Resignation | Rated 887 | Road to 1000 ♟️
+         https://www.youtube.com/watch?v=h543eU-a5ko
+         ID: h543eU-a5ko | Views: 0 | 2026-06-19 06:30
+
+GROUP: [rated_brain_beats_rated]
+  [DELETE] 645-Rated Brain Beats 632-Rated Brain (Someone Had to Lose)
+         https://www.youtube.com/watch?v=BlwwLZUwpB8
+         ID: BlwwLZUwpB8 | Views: 391 | 2026-06-15 15:55
+  [KEEP] 645-Rated Brain Beats 632-Rated Brain (Someone Had to Lose)
+         https://www.youtube.com/watch?v=LW3yYhQxrXE
+         ID: LW3yYhQxrXE | Views: 21 | 2026-06-15 15:59
+
+GROUP: [rated_resignation_chesscom]
+  [DELETE] Road to 1000 | Rated 878 | Resignation | Chess.com ♟️
+         https://www.youtube.com/watch?v=DrLpk1ZpNvI
+         ID: DrLpk1ZpNvI | Views: 445 | 2026-06-16 06:35
+  [DELETE] Road to 1000 | Rated 879 | Resignation | Chess.com ♟️
+         https://www.youtube.com/watch?v=0P_bbNexTd4
+         ID: 0P_bbNexTd4 | Views: 11 | 2026-06-16 06:35
+  [DELETE] Road to 1000 | Rated 863 | Resignation | Chess.com ♟️
+         https://www.youtube.com/watch?v=WKYaDKWhk6o
+         ID: WKYaDKWhk6o | Views: 20 | 2026-06-16 06:35
+  [DELETE] Road to 1000 | Rated 628 | Resignation | Chess.com ♟️
+         https://www.youtube.com/watch?v=jfvLGk-1iVs
+         ID: jfvLGk-1iVs | Views: 42 | 2026-06-16 11:14
+  [DELETE] Road to 1000 | Rated 620 | Resignation | Chess.com ♟️
+         https://www.youtube.com/watch?v=rKz3duAovm0
+         ID: rKz3duAovm0 | Views: 24 | 2026-06-16 11:14
+  [DELETE] Road to 1000 | Rated 612 | Resignation | Chess.com ♟️
+         https://www.youtube.com/watch?v=nJR901MDmug
+         ID: nJR901MDmug | Views: 88 | 2026-06-16 11:14
+  [KEEP] Road to 1000 | Rated 612 | Resignation | Chess.com ♟️
+         https://www.youtube.com/watch?v=dMDPexrk8Mo
+         ID: dMDPexrk8Mo | Views: 9 | 2026-06-16 11:15
+

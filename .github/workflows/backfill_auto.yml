@@ -1,0 +1,107 @@
+name: Chess Backfill Auto (Daily until done)
+
+on:
+  schedule:
+    # Run daily at 11:30 PM IST (6 PM UTC) — 30 mins after main pipeline
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      year:
+        description: 'Year to backfill'
+        required: true
+        default: '2026'
+        type: string
+      max_uploads:
+        description: 'Max uploads per day (YouTube allows ~6)'
+        required: false
+        default: '6'
+        type: string
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y ffmpeg fonts-dejavu
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      # ── Fetch all remaining unuploaded wins for the year ─────────────────
+      - name: Fetch remaining wins
+        run: python backfill.py ${{ github.event.inputs.year || '2026' }}
+        env:
+          CHESS_USERNAME: abhi15041984
+          BACKFILL_AUTO:  "true"
+          MAX_UPLOADS:    ${{ github.event.inputs.max_uploads || '6' }}
+
+      # ── Check if anything left to process ────────────────────────────────
+      - name: Check for remaining games
+        id: check
+        run: |
+          COUNT=$(python -c 'import json; print(len(json.load(open("won_games.json"))))')
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          if [ "$COUNT" -gt "0" ]; then
+            echo "has_games=true" >> $GITHUB_OUTPUT
+            echo "✅ $COUNT games remaining to upload today"
+          else
+            echo "has_games=false" >> $GITHUB_OUTPUT
+            echo "🎉 All games for ${{ github.event.inputs.year || '2026' }} are uploaded!"
+          fi
+
+      # ── Generate videos ───────────────────────────────────────────────────
+      - name: Generate videos
+        if: steps.check.outputs.has_games == 'true'
+        run: python step2_generate_video.py
+        env:
+          MAX_UPLOADS: ${{ github.event.inputs.max_uploads || '6' }}
+
+      # ── Generate scripts ──────────────────────────────────────────────────
+      - name: Generate scripts
+        if: steps.check.outputs.has_games == 'true'
+        run: python step3_generate_scripts.py
+        env:
+          MAX_UPLOADS: ${{ github.event.inputs.max_uploads || '6' }}
+
+      # ── Upload to YouTube ─────────────────────────────────────────────────
+      - name: Upload to YouTube
+        if: steps.check.outputs.has_games == 'true'
+        run: python step5_upload_youtube.py
+        env:
+          YOUTUBE_TOKEN:    ${{ secrets.YOUTUBE_TOKEN }}
+          PLAYLIST_BLITZ:  ${{ secrets.PLAYLIST_BLITZ }}
+          PLAYLIST_RAPID:  ${{ secrets.PLAYLIST_RAPID }}
+          MAX_UPLOADS:   ${{ github.event.inputs.max_uploads || '6' }}
+
+      # ── Summary ───────────────────────────────────────────────────────────
+      - name: Commit upload log
+        if: steps.check.outputs.has_games == 'true'
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add uploaded_games.json || true
+          git diff --staged --quiet || git commit -m "Update upload log [skip ci]"
+          git push || true
+
+      - name: Summary
+        run: |
+          COUNT=${{ steps.check.outputs.count }}
+          if [ "$COUNT" -eq "0" ]; then
+            echo "🎉 BACKFILL COMPLETE — All 2026 wins uploaded to YouTube!"
+          else
+            echo "✅ Uploaded ${{ github.event.inputs.max_uploads || '6' }} games today"
+            echo "📅 Will continue tomorrow at 11:30 PM IST automatically"
+          fi

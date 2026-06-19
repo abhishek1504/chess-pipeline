@@ -365,6 +365,23 @@ def upload_video(youtube, video_path, metadata, game_dir, blitz_id="", rapid_id=
         print(f"  ℹ️  {game_type} — no playlist ID set yet")
 
     save_upload_status(game_dir, video_id, metadata["title"], url)
+
+    # Also write to persistent upload log so backfill knows this was uploaded
+    log_file = "uploaded_games.json"
+    try:
+        existing = json.load(open(log_file)) if os.path.exists(log_file) else []
+        # Store game_id: end_time_white_black
+        game_id = None
+        # Try to extract from game_dir name
+        parts = os.path.basename(game_dir).split("_")
+        if len(parts) >= 4:
+            game_id = os.path.basename(game_dir)
+        if game_id and game_id not in existing:
+            existing.append(game_id)
+            json.dump(existing, open(log_file, "w"), indent=2)
+    except Exception as e:
+        print(f"  ⚠️  Could not update upload log: {e}")
+
     return video_id
 
 def print_summary(results):

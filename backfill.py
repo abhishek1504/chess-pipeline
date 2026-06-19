@@ -195,28 +195,28 @@ def main():
     if len(all_wins) > 10:
         print(f"  ... and {len(all_wins)-10} more")
 
-    # Filter out games already uploaded — check for youtube_upload.json
-    VIDEOS_DIR  = "videos"
-    MONTH_NAMES = {
-        1:"01_January", 2:"02_February", 3:"03_March", 4:"04_April",
-        5:"05_May",     6:"06_June",     7:"07_July",  8:"08_August",
-        9:"09_September",10:"10_October",11:"11_November",12:"12_December"
-    }
+    # Filter out games already uploaded
+    # Uses uploaded_games.json — a persistent log committed to the repo
+    # This works on GitHub Actions where videos/ folder doesn't persist
+    UPLOAD_LOG = "uploaded_games.json"
+    uploaded_ids = set()
+    if os.path.exists(UPLOAD_LOG):
+        try:
+            uploaded_ids = set(json.load(open(UPLOAD_LOG)))
+        except:
+            uploaded_ids = set()
 
-    def already_done(game, idx):
-        """Check if this game already has a youtube_upload.json."""
-        dt       = datetime.fromtimestamp(game.get("end_time", 0))
-        white    = game["white"]["username"]
-        black    = game["black"]["username"]
-        game_dir = os.path.join(VIDEOS_DIR, str(dt.year), MONTH_NAMES[dt.month],
-                                f"game_{idx:03d}_{white}_vs_{black}")
-        return os.path.exists(os.path.join(game_dir, "youtube_upload.json"))
+    def game_id(game, idx):
+        """Unique ID matching the game folder name written by step5."""
+        white = game["white"]["username"]
+        black = game["black"]["username"]
+        return f"game_{idx:03d}_{white}_vs_{black}"
 
-    # Check against full list with original indices
-    unprocessed = []
+    # Check against upload log
+    unprocessed  = []
     skipped_done = 0
     for i, g in enumerate(all_wins):
-        if already_done(g, i+1):
+        if game_id(g, i+1) in uploaded_ids:
             skipped_done += 1
         else:
             unprocessed.append((i+1, g))
