@@ -246,32 +246,34 @@ def create_playlist(youtube, title, description=""):
 def ensure_playlists(youtube):
     """
     Make sure BLITZ and RAPID playlists exist.
-    Creates them if PLAYLIST_BLITZ / PLAYLIST_RAPID env vars are empty.
-    Prints IDs so you can save them as GitHub Secrets.
+    Creates them if env vars are empty. Returns (blitz_id, rapid_id).
     """
-    global PLAYLIST_BLITZ, PLAYLIST_RAPID
+    blitz_id = os.environ.get("PLAYLIST_BLITZ", "")
+    rapid_id = os.environ.get("PLAYLIST_RAPID", "")
 
-    if not PLAYLIST_BLITZ:
+    if not blitz_id:
         print("  📋 Creating BLITZ playlist...")
-        PLAYLIST_BLITZ = create_playlist(
+        blitz_id = create_playlist(
             youtube,
             "Blitz Chess Games — Indian Thinking Athlete",
             "All blitz chess games from my Road to 1000 journey."
-        )
-        if PLAYLIST_BLITZ:
-            print(f"  ✅ BLITZ playlist created: {PLAYLIST_BLITZ}")
-            print(f"  💡 Add to GitHub Secrets as PLAYLIST_BLITZ={PLAYLIST_BLITZ}")
+        ) or ""
+        if blitz_id:
+            print(f"  ✅ BLITZ playlist: {blitz_id}")
+            print(f"  💡 Save as GitHub Secret: PLAYLIST_BLITZ={blitz_id}")
 
-    if not PLAYLIST_RAPID:
+    if not rapid_id:
         print("  📋 Creating RAPID playlist...")
-        PLAYLIST_RAPID = create_playlist(
+        rapid_id = create_playlist(
             youtube,
             "Rapid Chess Games — Indian Thinking Athlete",
             "All rapid chess games from my Road to 1000 journey."
-        )
-        if PLAYLIST_RAPID:
-            print(f"  ✅ RAPID playlist created: {PLAYLIST_RAPID}")
-            print(f"  💡 Add to GitHub Secrets as PLAYLIST_RAPID={PLAYLIST_RAPID}")
+        ) or ""
+        if rapid_id:
+            print(f"  ✅ RAPID playlist: {rapid_id}")
+            print(f"  💡 Save as GitHub Secret: PLAYLIST_RAPID={rapid_id}")
+
+    return blitz_id, rapid_id
 
 def already_uploaded(game_dir):
     """Check if this game was already uploaded."""
@@ -293,7 +295,7 @@ def save_upload_status(game_dir, video_id, title, url):
     with open(get_upload_status_file(game_dir), "w") as f:
         json.dump(status, f, indent=2)
 
-def upload_video(youtube, video_path, metadata, game_dir):
+def upload_video(youtube, video_path, metadata, game_dir, blitz_id="", rapid_id=""):
     """Upload video to YouTube with retry on quota errors."""
     print(f"  📤 Uploading: {os.path.basename(video_path)}")
     print(f"  📌 Title: {metadata['title']}")
@@ -353,14 +355,14 @@ def upload_video(youtube, video_path, metadata, game_dir):
 
     # Add to correct playlist based on game type
     game_type = get_game_type_from_script(game_dir)
-    if game_type == "BLITZ" and PLAYLIST_BLITZ:
+    if game_type == "BLITZ" and blitz_id:
         print(f"  📋 Adding to BLITZ playlist...")
-        add_to_playlist(youtube, video_id, PLAYLIST_BLITZ)
-    elif game_type == "RAPID" and PLAYLIST_RAPID:
+        add_to_playlist(youtube, video_id, blitz_id)
+    elif game_type == "RAPID" and rapid_id:
         print(f"  📋 Adding to RAPID playlist...")
-        add_to_playlist(youtube, video_id, PLAYLIST_RAPID)
+        add_to_playlist(youtube, video_id, rapid_id)
     elif game_type:
-        print(f"  ℹ️  Game type: {game_type} — no playlist configured")
+        print(f"  ℹ️  {game_type} — no playlist ID set yet")
 
     save_upload_status(game_dir, video_id, metadata["title"], url)
     return video_id
@@ -426,7 +428,7 @@ def main():
 
     # Ensure playlists exist (creates if missing)
     print("📋 Checking playlists...")
-    ensure_playlists(youtube)
+    blitz_playlist, rapid_playlist = ensure_playlists(youtube)
     print()
 
     results = []
@@ -442,7 +444,8 @@ def main():
                 # Fallback title if parsing fails
                 metadata["title"] = f"Chess Game — Road to 1000 | {CHANNEL_NAME} ♟️"
 
-            video_id = upload_video(youtube, vid_path, metadata, game_dir)
+            video_id = upload_video(youtube, vid_path, metadata, game_dir,
+                                       blitz_playlist, rapid_playlist)
             url      = f"https://www.youtube.com/watch?v={video_id}"
             results.append({"name": name, "success": True, "url": url, "error": None})
 
