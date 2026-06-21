@@ -6,6 +6,10 @@ on:
     - cron: '30 17 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: youtube-upload-lock
+  cancel-in-progress: false
+
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -54,16 +58,23 @@ jobs:
         if: steps.check.outputs.has_games == 'true'
         run: python step2_generate_video.py
         env:
-          MAX_UPLOADS: "6"
+          MAX_UPLOADS: "3"
 
       # ── Step 3: Generate titles, descriptions, hashtags ───────────────────
       - name: Generate scripts and metadata
         if: steps.check.outputs.has_games == 'true'
         run: python step3_generate_scripts.py
         env:
-          MAX_UPLOADS: "6"
+          MAX_UPLOADS: "3"
 
       # ── Step 5: Upload landscape + portrait to YouTube ────────────────────
+      - name: Random delay before upload (avoid robotic timing pattern)
+        if: steps.check.outputs.has_games == 'true'
+        run: |
+          DELAY=$((RANDOM % 600 + 60))
+          echo "Waiting ${DELAY}s before uploading..."
+          sleep $DELAY
+
       - name: Upload to YouTube
         if: steps.check.outputs.has_games == 'true'
         run: python step5_upload_youtube.py

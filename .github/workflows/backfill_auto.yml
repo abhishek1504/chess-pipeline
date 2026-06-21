@@ -1,9 +1,6 @@
-name: Chess Backfill Auto (Daily until done)
+name: Chess Backfill (Manual trigger only)
 
 on:
-  schedule:
-    # 11:30 PM IST = 6:00 PM UTC — 30 mins after daily pipeline
-    - cron: '0 18 * * *'
   workflow_dispatch:
     inputs:
       year:
@@ -14,8 +11,12 @@ on:
       max_uploads:
         description: 'Max uploads per day (YouTube allows ~6)'
         required: false
-        default: '6'
+        default: '3'
         type: string
+
+concurrency:
+  group: youtube-upload-lock
+  cancel-in-progress: false
 
 jobs:
   backfill:
@@ -46,7 +47,7 @@ jobs:
         env:
           CHESS_USERNAME: abhi15041984
           BACKFILL_AUTO:  "true"
-          MAX_UPLOADS:    ${{ github.event.inputs.max_uploads || '6' }}
+          MAX_UPLOADS:    ${{ github.event.inputs.max_uploads || '3' }}
 
       # ── Check if anything to process ─────────────────────────────────────
       - name: Check for games
@@ -67,24 +68,29 @@ jobs:
         if: steps.check.outputs.has_games == 'true'
         run: python step2_generate_video.py
         env:
-          MAX_UPLOADS: ${{ github.event.inputs.max_uploads || '6' }}
+          MAX_UPLOADS: ${{ github.event.inputs.max_uploads || '3' }}
 
       # ── Generate titles, descriptions, hashtags ───────────────────────────
       - name: Generate scripts
         if: steps.check.outputs.has_games == 'true'
         run: python step3_generate_scripts.py
         env:
-          MAX_UPLOADS: ${{ github.event.inputs.max_uploads || '6' }}
+          MAX_UPLOADS: ${{ github.event.inputs.max_uploads || '3' }}
 
       # ── Upload both videos to YouTube ─────────────────────────────────────
+      - name: Random delay before upload (avoid robotic timing pattern)
+        if: steps.check.outputs.has_games == 'true'
+        run: |
+          DELAY=$((RANDOM % 600 + 60))
+          echo "Waiting ${DELAY}s before uploading..."
+          sleep $DELAY
+
       - name: Upload to YouTube
         if: steps.check.outputs.has_games == 'true'
         run: python step5_upload_youtube.py
         env:
           YOUTUBE_TOKEN:   ${{ secrets.YOUTUBE_TOKEN }}
-          PLAYLIST_BLITZ:  ${{ secrets.PLAYLIST_BLITZ }}
-          PLAYLIST_RAPID:  ${{ secrets.PLAYLIST_RAPID }}
-          MAX_UPLOADS:     ${{ github.event.inputs.max_uploads || '6' }}
+          MAX_UPLOADS:     ${{ github.event.inputs.max_uploads || '3' }}
 
       # ── Commit upload log ─────────────────────────────────────────────────
       - name: Commit upload log
@@ -100,7 +106,7 @@ jobs:
       - name: Summary
         run: |
           if [ "${{ steps.check.outputs.has_games }}" = "true" ]; then
-            echo "✅ Uploaded ${{ github.event.inputs.max_uploads || '6' }} games today"
+            echo "✅ Uploaded ${{ github.event.inputs.max_uploads || '3' }} games today"
             echo "📅 Will continue tomorrow at 11:30 PM IST automatically"
           else
             echo "🎉 BACKFILL COMPLETE — All games uploaded!"

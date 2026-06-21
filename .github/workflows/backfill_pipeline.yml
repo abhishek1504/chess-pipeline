@@ -16,8 +16,12 @@ on:
       max_uploads:
         description: 'Max videos to generate and upload'
         required: false
-        default: '6'
+        default: '3'
         type: string
+
+concurrency:
+  group: youtube-upload-lock
+  cancel-in-progress: false
 
 jobs:
   backfill:
@@ -84,8 +88,6 @@ jobs:
         run: python step5_upload_youtube.py
         env:
           YOUTUBE_TOKEN:   ${{ secrets.YOUTUBE_TOKEN }}
-          PLAYLIST_BLITZ:  ${{ secrets.PLAYLIST_BLITZ }}
-          PLAYLIST_RAPID:  ${{ secrets.PLAYLIST_RAPID }}
           MAX_UPLOADS:     ${{ github.event.inputs.max_uploads }}
 
       - name: Commit upload log

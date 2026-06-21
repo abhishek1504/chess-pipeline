@@ -424,7 +424,7 @@ def main():
                     + metadata["description"]
                 )
                 print(f"  📱 Uploading portrait (last 20 moves / Shorts)...")
-                time.sleep(3)
+                time.sleep(20)
                 port_id  = upload_video(youtube, port_path, port_meta, game_dir)
                 port_url = f"https://www.youtube.com/watch?v={port_id}"
                 print(f"  ✅ Portrait: {port_url}")
@@ -455,10 +455,10 @@ def main():
             url = land_url
             results.append({"name": name, "success": True, "url": url, "error": None})
 
-            # Delay before next game
+            # Delay before next game — generous gap to avoid rate-limit/bot flags
             if i < len(to_upload) - 1:
-                print(f"  ⏸️  Waiting 5s before next game...")
-                time.sleep(5)
+                print(f"  ⏸️  Waiting 60s before next game...")
+                time.sleep(60)
 
         except HttpError as e:
             error = f"YouTube API error: {e.resp.status} — {e.content.decode()[:200]}"
