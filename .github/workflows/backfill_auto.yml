@@ -1,113 +1,28 @@
-name: Chess Backfill (Manual trigger only)
+# DISABLED — Backfill is disabled to avoid duplicate uploads and bot detection.
+# Run backfill manually on your Mac if needed:
+#   python backfill.py 2026 01
+#   python step2_generate_video.py
+#   python step3_generate_scripts.py
+#   python step5_upload_youtube.py
+
+name: Chess Backfill (DISABLED)
 
 on:
   workflow_dispatch:
     inputs:
-      year:
-        description: 'Year to backfill'
+      confirm:
+        description: 'Type ENABLE to run this workflow'
         required: true
-        default: '2026'
-        type: string
-      max_uploads:
-        description: 'Max uploads per day (YouTube allows ~6)'
-        required: false
-        default: '3'
-        type: string
-
-concurrency:
-  group: youtube-upload-lock
-  cancel-in-progress: false
+        default: 'disabled'
 
 jobs:
-  backfill:
+  check:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install system dependencies
+      - name: Check if enabled
         run: |
-          sudo apt-get update -q
-          sudo apt-get install -y ffmpeg fonts-dejavu
-
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
-
-      # ── Fetch next batch of unuploaded quality wins ───────────────────────
-      - name: Fetch remaining wins (oldest first)
-        run: python backfill.py ${{ github.event.inputs.year || '2026' }}
-        env:
-          CHESS_USERNAME: abhi15041984
-          BACKFILL_AUTO:  "true"
-          MAX_UPLOADS:    ${{ github.event.inputs.max_uploads || '3' }}
-
-      # ── Check if anything to process ─────────────────────────────────────
-      - name: Check for games
-        id: check
-        run: |
-          COUNT=$(python -c 'import json; print(len(json.load(open("won_games.json"))))')
-          echo "count=$COUNT" >> $GITHUB_OUTPUT
-          if [ "$COUNT" -gt "0" ]; then
-            echo "has_games=true" >> $GITHUB_OUTPUT
-            echo "✅ $COUNT quality games to process today"
-          else
-            echo "has_games=false" >> $GITHUB_OUTPUT
-            echo "🎉 All ${{ github.event.inputs.year || '2026' }} games uploaded!"
+          if [ "${{ github.event.inputs.confirm }}" != "ENABLE" ]; then
+            echo "Backfill is disabled. Type ENABLE in the confirm field to run."
+            exit 1
           fi
-
-      # ── Generate landscape + portrait videos ──────────────────────────────
-      - name: Generate videos
-        if: steps.check.outputs.has_games == 'true'
-        run: python step2_generate_video.py
-        env:
-          MAX_UPLOADS: ${{ github.event.inputs.max_uploads || '3' }}
-
-      # ── Generate titles, descriptions, hashtags ───────────────────────────
-      - name: Generate scripts
-        if: steps.check.outputs.has_games == 'true'
-        run: python step3_generate_scripts.py
-        env:
-          MAX_UPLOADS: ${{ github.event.inputs.max_uploads || '3' }}
-
-      # ── Upload both videos to YouTube ─────────────────────────────────────
-      - name: Random delay before upload (avoid robotic timing pattern)
-        if: steps.check.outputs.has_games == 'true'
-        run: |
-          DELAY=$((RANDOM % 600 + 60))
-          echo "Waiting ${DELAY}s before uploading..."
-          sleep $DELAY
-
-      - name: Upload to YouTube
-        if: steps.check.outputs.has_games == 'true'
-        run: python step5_upload_youtube.py
-        env:
-          YOUTUBE_TOKEN:   ${{ secrets.YOUTUBE_TOKEN }}
-          MAX_UPLOADS:     ${{ github.event.inputs.max_uploads || '3' }}
-
-      # ── Commit upload log ─────────────────────────────────────────────────
-      - name: Commit upload log
-        if: steps.check.outputs.has_games == 'true'
-        run: |
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
-          git add uploaded_games.json || true
-          git diff --staged --quiet || git commit -m "Update upload log [skip ci]"
-          git push || true
-
-      # ── Summary ───────────────────────────────────────────────────────────
-      - name: Summary
-        run: |
-          if [ "${{ steps.check.outputs.has_games }}" = "true" ]; then
-            echo "✅ Uploaded ${{ github.event.inputs.max_uploads || '3' }} games today"
-            echo "📅 Will continue tomorrow at 11:30 PM IST automatically"
-          else
-            echo "🎉 BACKFILL COMPLETE — All games uploaded!"
-          fi
+          echo "Running backfill..."
