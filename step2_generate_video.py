@@ -89,7 +89,6 @@ def get_clocks_at_move(clocks, move_idx):
 
 # ── Config ────────────────────────────────────────────────────────────────────
 USERNAME   = "abhi15041984"
-PORTRAIT_MOVES  = 20    # Portrait/Shorts: only show last N moves
 FPS        = 1
 OUTPUT_DIR = "videos"
 PIECES_DIR = "pieces"
@@ -832,6 +831,10 @@ def generate_videos(game_data, all_pieces, land_path, port_path, game_dir):
         move_types.append(classify_move(tb, mv))
         tb.push(mv)
 
+    # Portrait: last PORTRAIT_MOVES moves only
+    port_start      = max(0, len(moves) - PORTRAIT_MOVES)
+    port_move_types = move_types[port_start:]   # audio only for these moves
+
     # Confetti particles (fixed set, animated by frame index)
     land_particles = make_confetti_particles(1280, 720,  count=200, seed=42)
     port_particles = make_confetti_particles(1080, 1920, count=300, seed=42)
@@ -851,33 +854,31 @@ def generate_videos(game_data, all_pieces, land_path, port_path, game_dir):
                     confetti_particles=cp, confetti_fidx=cf,
                     winner_text=winner_text if cp else "")
 
-    # Portrait: only last PORTRAIT_MOVES moves
-    port_start  = max(0, len(moves) - PORTRAIT_MOVES)
-    port_board  = game.board()
+    # Fast-forward portrait board to port_start position
+    port_board = game.board()
     for mv in moves[:port_start]:
         port_board.push(mv)
 
-    # Opening hold — 2 frames (landscape only; portrait starts at port_start)
+    # Opening hold — 2 frames (landscape from move 0, portrait from port_start)
     for _ in range(2):
         land_frames.append(make_landscape_frame(board, land_pieces, move_pairs, 0,
                            move=None, **common(0, None, 0)))
-        # Portrait opening shows the board at port_start position
         port_frames.append(make_portrait_frame(port_board, port_pieces, move_pairs, 0,
-                           move=None, **common(0, None, port_start)))
+                           move=None, **common(port_start, None, port_start)))
 
     # One frame per move
     for i, mv in enumerate(moves):
         board.push(mv)
         is_last = (i == len(moves)-1)
 
-        # Landscape — always add every move
+        # Landscape — every move
         land_frames.append(make_landscape_frame(board, land_pieces, move_pairs, i+1,
                            move=mv, **common(i+1, mv, i+1)))
 
-        # Portrait — only add frames from port_start onwards
+        # Portrait — only from port_start onwards
         if i >= port_start:
             port_board.push(mv)
-            port_idx = i - port_start + 1   # relative index for portrait
+            port_idx = i - port_start + 1
             port_frames.append(make_portrait_frame(port_board, port_pieces, move_pairs, port_idx,
                                move=mv, **common(i+1, mv, i+1)))
 
@@ -885,13 +886,12 @@ def generate_videos(game_data, all_pieces, land_path, port_path, game_dir):
             print(f"  ... {i+1}/{len(moves)} moves")
 
     # Animated confetti — CONFETTI_FRAMES frames
-    port_total = len(moves) - port_start   # total portrait moves shown
     for fi in range(CONFETTI_FRAMES):
         land_frames.append(make_landscape_frame(board, land_pieces, move_pairs, len(moves),
                            move=moves[-1] if moves else None,
                            **common(len(moves), None, len(moves),
                                     cp=land_particles, cf=fi)))
-        port_frames.append(make_portrait_frame(port_board, port_pieces, move_pairs, port_total,
+        port_frames.append(make_portrait_frame(port_board, port_pieces, move_pairs, len(port_move_types),
                            move=moves[-1] if moves else None,
                            **common(len(moves), None, len(moves),
                                     cp=port_particles, cf=fi)))
@@ -904,11 +904,14 @@ def generate_videos(game_data, all_pieces, land_path, port_path, game_dir):
     print(f"  🎬 Writing portrait...")
     write_video(port_frames, port_tmp)
 
-    # Build audio once, mux into both
-    print(f"  🔊 Building audio track...")
-    audio = build_audio_track(move_types, FPS)
-    mux_audio(land_tmp, audio)
-    mux_audio(port_tmp, audio)
+    # Build separate audio tracks — portrait only covers last PORTRAIT_MOVES moves
+    print(f"  🔊 Building landscape audio ({len(move_types)} moves)...")
+    land_audio = build_audio_track(move_types, FPS)
+    mux_audio(land_tmp, land_audio)
+
+    print(f"  🔊 Building portrait audio ({len(port_move_types)} moves)...")
+    port_audio = build_audio_track(port_move_types, FPS)
+    mux_audio(port_tmp, port_audio)
 
     # Rename if silent still exists
     for tmp, final in [(land_tmp, land_path), (port_tmp, port_path)]:
