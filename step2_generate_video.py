@@ -88,8 +88,9 @@ def get_clocks_at_move(clocks, move_idx):
     return fmt_clk(w_clk), fmt_clk(b_clk)
 
 # ── Config ────────────────────────────────────────────────────────────────────
-USERNAME   = "abhi15041984"
-FPS        = 1
+USERNAME        = "abhi15041984"
+FPS             = 1
+PORTRAIT_MOVES  = 20   # Portrait/Shorts: show only last N moves
 OUTPUT_DIR = "videos"
 PIECES_DIR = "pieces"
 SOUNDS_DIR = "sounds"
