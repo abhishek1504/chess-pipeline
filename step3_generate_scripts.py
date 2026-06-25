@@ -137,29 +137,47 @@ def generate_description(game_data, meta, my_rating, opp_name,
     opening_str = f"{opening} ({eco})" if opening and eco else opening or "Unknown Opening"
 
     game_type = get_game_type(meta)
-    desc = f"""I am Abhishek — software developer, runner, and a chess player who started at 42.
-Currently rated {my_rating} on chess.com. Road to 1000 — one {game_type.lower()} game at a time.
+    my_side   = get_my_side(game_data)
+    side_str  = "White" if my_side == "white" else "Black"
 
-🎮 Game Details:
-• Game type: {game_type}
-• Playing as: {'White' if get_my_side(game_data) == 'white' else 'Black'}
-• Opponent: {opp_name} (rated {opp_rating}) — {diff_str}
-• Opening: {opening_str}
-• Time Control: {time_ctrl}
-• Result: Won by {win_method} in {move_count} moves
-• Date: {date_str}
+    # Unique opening hook — varies by game context
+    if diff >= 150:
+        hook = f"Took on a player {diff} points above me and won. Playing {side_str} in a {game_type.lower()} game on chess.com."
+    elif diff <= -150:
+        hook = f"A {game_type.lower()} win playing {side_str}. Opponent was {abs(diff)} points below me — but every win counts on the road to 1000."
+    elif win_method == "Checkmate":
+        hook = f"Checkmate in {move_count} moves playing {side_str}. {opening_str} — one of my favourite setups."
+    elif move_count <= 25:
+        hook = f"Quick {game_type.lower()} win in just {move_count} moves playing {side_str}. {opening_str}."
+    elif move_count >= 60:
+        hook = f"A long {move_count}-move battle playing {side_str}. {opening_str} — grindy but worth it."
+    else:
+        hook = f"A {game_type.lower()} game playing {side_str} with the {opening_str}. Won by {win_method} in {move_count} moves."
 
-♟️ Every game on this channel is a real game — wins, losses, blunders and all.
-Not a GM. Not a coach. Just a 42-year-old trying to get better at chess in public.
+    desc = f"""{hook}
 
-📌 Subscribe for weekly chess games, puzzles, and the slow grind of improvement.
-👍 Like if you enjoyed the game
-🔔 Hit the bell so you don't miss new uploads
+I am Abhishek — software developer, distance runner, and chess player who started at 42.
+Currently rated {my_rating} on chess.com.
+
+Game Details:
+- Opening: {opening_str}
+- Game type: {game_type} | Time control: {time_ctrl}
+- Playing as: {side_str}
+- Opponent: {opp_name} (rated {opp_rating}) — {diff_str}
+- Result: Won by {win_method} in {move_count} moves
+- Date: {date_str}
+
+Every game on this channel is real — wins, losses, blunders and everything in between.
+Not a GM. Not a professional coach. Just a 42-year-old getting better at chess in public and documenting every step.
+
+If you are a beginner or intermediate player trying to improve, this channel is for you.
+Subscribe and follow the journey from 800 to 1000 and beyond.
 
 {CHANNEL_URL} | chess.com: {USERNAME}
+Email: thinkingathleteindia@gmail.com
 
 ─────────────────────────
-🏃 {CHANNEL} — Chess. Discipline. The slow grind of getting better.
+{CHANNEL} — Chess. Discipline. The Grind.
 ─────────────────────────"""
 
     return desc[:4900]
