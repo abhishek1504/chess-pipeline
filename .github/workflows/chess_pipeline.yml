@@ -38,6 +38,7 @@ jobs:
         run: python watcher.py
         env:
           CHESS_USERNAME: abhi15041984
+          CHECKMATE_ONLY: "true"   # only upload games won by checkmate
 
       # ── Check if any games passed quality filter ──────────────────────────
       - name: Check for games
@@ -80,7 +81,7 @@ jobs:
         run: python step5_upload_youtube.py
         env:
           YOUTUBE_TOKEN:   ${{ secrets.YOUTUBE_TOKEN }}
-          MAX_UPLOADS:     "6"
+          MAX_UPLOADS:     "3"
 
       # ── Commit upload log so next run knows what was uploaded ─────────────
       - name: Commit upload log

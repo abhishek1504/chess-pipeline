@@ -20,6 +20,9 @@ OUTPUT_FILE = "won_games.json"
 
 # Abandonment codes — skip these, not real games
 ABANDONMENT_CODES = {"abandoned", "timeout", "timevsinsufficient"}
+# Only keep games won by checkmate (skip resignations, timeouts, etc.)
+# Set env CHECKMATE_ONLY=false to accept all real wins again.
+CHECKMATE_ONLY = os.environ.get("CHECKMATE_ONLY", "true").lower() == "true"
 
 # How far back to look (24 hours)
 LOOKBACK_HOURS = 24
@@ -55,6 +58,8 @@ def is_real_win(game):
     if game[side]["result"] != "win":
         return False
     if game[opp_side]["result"] in ABANDONMENT_CODES:
+        return False
+    if CHECKMATE_ONLY and game[opp_side]["result"] != "checkmated":
         return False
     return True
 
