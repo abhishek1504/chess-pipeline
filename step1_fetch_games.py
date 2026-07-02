@@ -11,6 +11,7 @@ The Thinking Athlete Pipeline
 
 import requests
 import json
+import os
 import time
 from datetime import datetime
 
@@ -20,6 +21,9 @@ OUTPUT_FILE = "won_games.json"
 
 # Result codes chess.com uses that mean opponent abandoned — not real games
 ABANDONMENT_CODES = {"abandoned", "timeout", "timevsinsufficient"}
+# Only keep games won by checkmate (skip resignations, timeouts, etc.)
+# Set env CHECKMATE_ONLY=false to accept all real wins again.
+CHECKMATE_ONLY = os.environ.get("CHECKMATE_ONLY", "true").lower() == "true"
 
 def get_archives():
     url = f"https://api.chess.com/pub/player/{USERNAME}/games/archives"
@@ -215,6 +219,8 @@ def is_real_win(game):
     opp_result = game[opp_side]["result"]
     if opp_result in ABANDONMENT_CODES:
         return False, "abandonment"
+    if CHECKMATE_ONLY and opp_result != "checkmated":
+        return False, f"not_checkmate({opp_result})"
     # Quality filter — estimated accuracy >= MIN_QUALITY
     quality = estimate_game_quality(game)
     if quality < MIN_QUALITY:

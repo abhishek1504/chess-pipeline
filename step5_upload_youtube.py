@@ -48,7 +48,11 @@ PRIVACY_STATUS    = "private"    # "private" → review → change to "public" m
 CATEGORY_ID       = "20"        # Gaming
 DEFAULT_LANGUAGE  = "en"
 CHANNEL_NAME      = "Indian Thinking Athlete"
-MAX_UPLOADS       = None         # None = upload all, set to 5 to limit
+# Max games to upload per run. Read from env (the workflow sets it);
+# 0 or unset = upload all. Note: each game = 2 YouTube uploads
+# (landscape + portrait) at 1600 quota units each — the default API
+# quota of 10,000/day covers ~3 games (6 videos) per day.
+MAX_UPLOADS       = int(os.environ.get("MAX_UPLOADS", 0)) or None
 # ─────────────────────────────────────────────────────────────────────────────
 
 MONTH_NAMES = {

@@ -26,6 +26,9 @@ USERNAME    = "abhi15041984"
 HEADERS     = {"User-Agent": "TheThinkingAthlete/1.0 Chess Pipeline"}
 OUTPUT_FILE = "won_games.json"
 ABANDONMENT = {"abandoned", "timeout", "timevsinsufficient"}
+# Only keep games won by checkmate (skip resignations, timeouts, etc.)
+# Set env CHECKMATE_ONLY=false to accept all real wins again.
+CHECKMATE_ONLY = os.environ.get("CHECKMATE_ONLY", "true").lower() == "true"
 
 def get_my_side(game):
     return "white" if game["white"]["username"].lower() == USERNAME.lower() else "black"
@@ -196,12 +199,11 @@ def is_real_win(game):
         return False
     if game[opp_side]["result"] in ABANDONMENT:
         return False
+    if CHECKMATE_ONLY and game[opp_side]["result"] != "checkmated":
+        return False
     # Quality filter — estimated accuracy >= MIN_QUALITY
     quality = estimate_game_quality(game)
     if quality < MIN_QUALITY:
-        return False
-    # Quality filter
-    if estimate_game_quality(game) < MIN_QUALITY:
         return False
     return True
 
