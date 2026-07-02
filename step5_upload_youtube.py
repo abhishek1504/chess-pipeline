@@ -133,13 +133,18 @@ def extract_section(content, header):
         if header.lower() in line.lower():
             capture = True
             continue
-        if capture and set(line.strip()) <= {"─", "-", "=", " ", ""}:
-            if result:  # dash line after content = end of section
-                break
-            continue   # dash line right after header = skip it
         if capture:
-            # Stop at next section header (lines with emoji + caps)
-            if any(e in line for e in ["🎬","📋","#️⃣","📱","="*10]):
+            stripped = line.strip()
+            # Dash/divider line (non-empty, only ─ - =): skip if right after
+            # header, otherwise it marks the end of the section.
+            # NOTE: blank lines are NOT terminators — multi-paragraph
+            # descriptions must survive intact.
+            if stripped and set(stripped) <= {"─", "-", "="}:
+                if result:
+                    break
+                continue
+            # Stop at next section header (emoji headers / music tip)
+            if any(e in line for e in ["🎬","📋","#️⃣","📱","🎵","="*10]):
                 break
             result.append(line)
 
@@ -153,6 +158,12 @@ def parse_script(script_path):
     desc     = extract_section(content, "YOUTUBE DESCRIPTION")
     hashtags = extract_section(content, "HASHTAGS")
     ig_cap   = extract_section(content, "INSTAGRAM CAPTION")
+
+    # Shorts-specific sections (present in script.txt generated after the
+    # unique-Shorts-metadata change; empty string for older scripts)
+    shorts_title    = extract_section(content, "SHORTS TITLE").strip('"').strip("'").strip()
+    shorts_desc     = extract_section(content, "SHORTS DESCRIPTION")
+    shorts_hashtags = extract_section(content, "SHORTS HASHTAGS")
 
     # Clean title
     title = title.strip('"').strip("'").strip()
@@ -179,10 +190,20 @@ def parse_script(script_path):
         if t.lower() not in [x.lower() for x in tag_list]:
             tag_list.append(t)
 
+    # Separate tag list for Shorts (led by shorts/chessshorts)
+    shorts_tag_list = re.findall(r'#(\w+)', shorts_hashtags)
+    for t in ["shorts","chessshorts","chess","chesscom","roadto1000"]:
+        if t.lower() not in [x.lower() for x in shorts_tag_list]:
+            shorts_tag_list.append(t)
+
     return {
-        "title":       title[:100],
-        "description": full_desc[:4900],
-        "tags":        tag_list[:50],
+        "title":           title[:100],
+        "description":     full_desc[:4900],
+        "tags":            tag_list[:50],
+        "shorts_title":    shorts_title,
+        "shorts_desc":     shorts_desc,
+        "shorts_hashtags": shorts_hashtags,
+        "shorts_tags":     shorts_tag_list[:50],
     }
 
 def get_upload_status_file(game_dir):
@@ -417,12 +438,34 @@ def main():
             port_url = None
             if port_path and os.path.exists(port_path):
                 port_meta = dict(metadata)
-                port_meta["title"] = f"[SHORTS] {base_title}"[:100]
-                port_meta["description"] = (
-                    f"Last 20 moves of this game.\n\n"
-                    f"Watch full game here: {land_url}\n\n"
-                    + metadata["description"]
-                )
+
+                # ── Unique title (distinct from landscape) ────────────
+                s_title = metadata.get("shorts_title") or \
+                          f"Final Moves: {base_title.split('|')[0].strip()}"
+                port_meta["title"] = f"{s_title[:91]} #Shorts"[:100]
+
+                # ── Unique description + full-game link ───────────────
+                s_desc = metadata.get("shorts_desc")
+                if s_desc:
+                    s_desc = s_desc.replace("[FULL_GAME_LINK]", land_url)
+                    if land_url not in s_desc:  # safety for edited scripts
+                        s_desc += f"\n\n♟️ Watch the FULL game: {land_url}"
+                else:
+                    # Fallback for script.txt files generated before the
+                    # Shorts-metadata change
+                    s_desc = (
+                        f"The decisive final moves of this game.\n\n"
+                        f"♟️ Watch the FULL game move by move: {land_url}\n\n"
+                        f"Can you spot the turning point? Drop it in the comments 👇"
+                    )
+
+                s_hashtags = metadata.get("shorts_hashtags") or \
+                    "#shorts #chessshorts #chess #chesscom #roadto1000 #thinkingathlete"
+                port_meta["description"] = f"{s_desc}\n\n{s_hashtags}"[:4900]
+
+                # ── Shorts-specific YouTube tags ──────────────────────
+                if metadata.get("shorts_tags"):
+                    port_meta["tags"] = metadata["shorts_tags"]
                 print(f"  📱 Uploading portrait (last 20 moves / Shorts)...")
                 time.sleep(20)
                 port_id  = upload_video(youtube, port_path, port_meta, game_dir)

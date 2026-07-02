@@ -11,6 +11,7 @@ Requirements: chess (already installed)
 import json
 import os
 import sys
+import re
 import chess
 import chess.pgn
 import io
@@ -245,6 +246,81 @@ def generate_hashtags(meta, my_rating, opp_rating, win_method, opening):
     # Music recommendation in script (not a hashtag)
     return " ".join(tags[:20])
 
+def opening_hashtag(opening):
+    """'Caro-Kann Defense: Exchange Variation' -> '#carokanndefense'"""
+    if not opening:
+        return None
+    short = opening.split(":")[0].strip()
+    tag   = "#" + re.sub(r"[^a-z0-9]", "", short.lower())[:22]
+    return tag if len(tag) > 3 else None
+
+def generate_shorts_title(meta, my_rating, opp_name, opp_rating,
+                          win_method, move_count, game_data):
+    """Short, punchy, game-specific title for the vertical (Shorts) video.
+    Must be distinct from the landscape title or YouTube treats the pair
+    as duplicate content."""
+    opening = (meta.get("opening") or "Chess").split(":")[0].strip()
+    diff    = opp_rating - my_rating
+
+    if diff >= 100:
+        return f"Beating a {opp_rating} Rated Player With the {opening} ♟️"[:92]
+
+    templates = [
+        f"{win_method} in {move_count} Moves — {opening}",
+        f"The {opening} Finish You Need to See ♟️",
+        f"How This {opening} Game Ended ({my_rating} Rated)",
+        f"Final Moves: {opening} vs {opp_rating} Rated",
+        f"{opening} — Watch the Final Attack ♟️",
+    ]
+    # Deterministic pick so re-runs produce the same title for the same game
+    idx = (game_data.get("end_time", 0) + move_count) % len(templates)
+    return templates[idx][:92]
+
+def generate_shorts_description(meta, my_rating, opp_name, opp_rating,
+                                win_method, move_count, date_str):
+    """Unique description for the Short — deliberately different wording
+    from the landscape description. step5 replaces [FULL_GAME_LINK] with
+    the real landscape URL after upload."""
+    opening = (meta.get("opening") or "this").split(":")[0].strip()
+    return f"""The final moves of my {opening} game against {opp_name} ({opp_rating}). Won by {win_method.lower()} in {move_count} moves — currently rated {my_rating} and climbing to 1000.
+
+♟️ Watch the FULL game move by move: [FULL_GAME_LINK]
+
+Can you spot the turning point? Drop your move in the comments 👇
+
+I'm Abhishek — a 42-year-old developer learning chess in public, one game at a time."""
+
+def generate_shorts_hashtags(meta, my_rating, opp_rating, win_method, opening):
+    """Tight hashtag set for Shorts. YouTube only surfaces the first 3
+    hashtags above a Short's title, so highest-value tags go first."""
+    game_type = get_game_type(meta)
+
+    tags = ["#shorts", "#chessshorts", "#chess"]
+
+    op_tag = opening_hashtag(opening)
+    if op_tag:
+        tags.append(op_tag)
+
+    if game_type == "BLITZ":
+        tags.append("#blitzchess")
+    elif game_type == "BULLET":
+        tags.append("#bulletchess")
+    else:
+        tags.append("#rapidchess")
+
+    if win_method == "Checkmate":
+        tags.append("#checkmate")
+
+    tags += ["#chesscom", "#roadto1000", "#chessindia", "#thinkingathlete"]
+
+    # De-duplicate, preserve order
+    seen, out = set(), []
+    for t in tags:
+        if t.lower() not in seen:
+            seen.add(t.lower())
+            out.append(t)
+    return " ".join(out[:12])
+
 def get_music_suggestion(meta, move_count, win_method):
     """Suggest background music from YouTube Audio Library."""
     game_type = get_game_type(meta)
@@ -263,6 +339,16 @@ def save_script(game_dir, title, description, hashtags, game_data, meta,
     eco     = meta.get("eco", "")
 
     music_tip = get_music_suggestion(meta, move_count, win_method)
+
+    # Shorts-specific metadata — must be unique vs the landscape video,
+    # otherwise YouTube deprioritises the pair as duplicate content.
+    shorts_title    = generate_shorts_title(meta, my_rating, opp_name, opp_rating,
+                                            win_method, move_count, game_data)
+    shorts_desc     = generate_shorts_description(meta, my_rating, opp_name, opp_rating,
+                                                  win_method, move_count, date_str)
+    shorts_hashtags = generate_shorts_hashtags(meta, my_rating, opp_rating,
+                                               win_method, opening)
+
     content = f"""{"="*65}
 GAME: {game_data['white']['username']} vs {game_data['black']['username']}
 Date: {date_str}  |  My Rating: {my_rating}  |  Opponent: {opp_rating}
@@ -280,6 +366,18 @@ Opening: {opening} ({eco})  |  Won by: {win_method}  |  Moves: {move_count}
 #️⃣  HASHTAGS (add to description or first comment)
 {"─"*40}
 {hashtags}
+
+🎬 SHORTS TITLE
+{"─"*40}
+{shorts_title}
+
+📋 SHORTS DESCRIPTION
+{"─"*40}
+{shorts_desc}
+
+#️⃣  SHORTS HASHTAGS
+{"─"*40}
+{shorts_hashtags}
 
 {music_tip}
 
