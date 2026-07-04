@@ -14,6 +14,8 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    permissions:
+      contents: write   # needed to push the upload log back to main
 
     steps:
       - name: Checkout
@@ -84,14 +86,31 @@ jobs:
           MAX_UPLOADS:     "3"
 
       # ── Commit upload log so next run knows what was uploaded ─────────────
+      # CRITICAL: if this push fails, the next run re-uploads the same
+      # games. Long runs mean main often moves underneath us (merged PRs),
+      # so pull --rebase and retry instead of the old silent '|| true'.
       - name: Commit upload log
         if: steps.check.outputs.has_games == 'true'
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add uploaded_games.json || true
-          git diff --staged --quiet || git commit -m "Update upload log [skip ci]"
-          git push || true
+          git add uploaded_games.json
+          if git diff --staged --quiet; then
+            echo "No upload log changes to commit."
+            exit 0
+          fi
+          git commit -m "Update upload log [skip ci]"
+          for i in 1 2 3; do
+            if git push; then
+              echo "Upload log pushed."
+              exit 0
+            fi
+            echo "Push failed (attempt $i) — rebasing on latest main and retrying..."
+            git pull --rebase origin main
+            sleep 5
+          done
+          echo "::error::Could not push upload log — next run may re-upload these games!"
+          exit 1
 
       # ── Summary ───────────────────────────────────────────────────────────
       - name: Summary

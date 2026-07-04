@@ -306,17 +306,25 @@ def main():
         except:
             uploaded_ids = set()
 
-    def game_id(game, idx):
-        """Unique ID matching the game folder name written by step5."""
+    def stable_game_id(game):
+        """Order-independent id (end_time never changes; the old
+        index-based id shifted with list order and caused re-uploads)."""
         white = game["white"]["username"]
         black = game["black"]["username"]
-        return f"game_{idx:03d}_{white}_vs_{black}"
+        return f"{game.get('end_time', 0)}_{white}_vs_{black}"
+
+    def in_upload_log(game):
+        if stable_game_id(game) in uploaded_ids:
+            return True
+        suffix = f"{game['white']['username']}_vs_{game['black']['username']}"
+        return any(e.startswith("game_") and e.endswith(suffix)
+                   for e in uploaded_ids)
 
     # Check against upload log
     unprocessed  = []
     skipped_done = 0
     for i, g in enumerate(all_wins):
-        if game_id(g, i+1) in uploaded_ids:
+        if in_upload_log(g):
             skipped_done += 1
         else:
             unprocessed.append((i+1, g))

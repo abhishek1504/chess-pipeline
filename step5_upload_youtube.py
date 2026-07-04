@@ -250,13 +250,50 @@ def get_upload_status_file(game_dir):
 
     return blitz_id, rapid_id
 
-def already_uploaded(game_dir):
-    """Check if this game was already uploaded."""
+def get_stable_game_id(game_dir):
+    """Stable id written by step3 into script.txt ('Game ID: ...')."""
+    sp = os.path.join(game_dir, "script.txt")
+    if os.path.exists(sp):
+        m = re.search(r"^Game ID:\s*(\S+)", open(sp, encoding="utf-8").read(), re.M)
+        if m:
+            return m.group(1)
+    return None
+
+def load_upload_log():
+    try:
+        return set(json.load(open("uploaded_games.json")))
+    except Exception:
+        return set()
+
+def already_uploaded(game_dir, uploaded_ids=None):
+    """Check if this game was already uploaded.
+
+    Two layers:
+    1. Per-folder status file — works for local runs.
+    2. The committed uploaded_games.json — the only layer that survives
+       a fresh CI checkout (videos/ isn't committed). Checked via the
+       stable game id, with a loose player-pair match for legacy
+       index-based log entries."""
     status_file = get_upload_status_file(game_dir)
     if os.path.exists(status_file):
         data = json.load(open(status_file))
-        return data.get("video_id") is not None
-    return False
+        if data.get("video_id") is not None:
+            return True
+
+    if uploaded_ids is None:
+        uploaded_ids = load_upload_log()
+    if not uploaded_ids:
+        return False
+
+    sid = get_stable_game_id(game_dir)
+    if sid and sid in uploaded_ids:
+        return True
+
+    # Legacy entries: 'game_001_White_vs_Black'. Match by player pair,
+    # restricted to old-format entries so rematches aren't swallowed.
+    suffix = re.sub(r"^game_\d+_", "", os.path.basename(game_dir))
+    return any(e.startswith("game_") and e.endswith(suffix)
+               for e in uploaded_ids)
 
 def save_upload_status(game_dir, video_id, title, url):
     """Save upload info so we don't re-upload."""
@@ -335,12 +372,10 @@ def upload_video(youtube, video_path, metadata, game_dir):
     log_file = "uploaded_games.json"
     try:
         existing = json.load(open(log_file)) if os.path.exists(log_file) else []
-        # Store game_id: end_time_white_black
-        game_id = None
-        # Try to extract from game_dir name
-        parts = os.path.basename(game_dir).split("_")
-        if len(parts) >= 4:
-            game_id = os.path.basename(game_dir)
+        # Store the STABLE game id (end_time_white_vs_black) from
+        # script.txt — order-independent, unlike the folder name whose
+        # index shifts between runs (the cause of duplicate uploads).
+        game_id = get_stable_game_id(game_dir) or os.path.basename(game_dir)
         if game_id and game_id not in existing:
             existing.append(game_id)
             json.dump(existing, open(log_file, "w"), indent=2)
@@ -386,7 +421,8 @@ def main():
         sys.exit(1)
 
     # Filter already uploaded
-    to_upload = [(g,l,p) for g,l,p in ready if not already_uploaded(g)]
+    uploaded_ids = load_upload_log()
+    to_upload = [(g,l,p) for g,l,p in ready if not already_uploaded(g, uploaded_ids)]
     skipped   = len(ready) - len(to_upload)
 
     if not to_upload:
