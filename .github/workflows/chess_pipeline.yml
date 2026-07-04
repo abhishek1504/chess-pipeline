@@ -67,6 +67,9 @@ jobs:
         run: python step3_generate_scripts.py
         env:
           MAX_UPLOADS: "3"
+          # Optional: set this repo secret to get AI-written per-game
+          # stories in descriptions. Pipeline works without it too.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       # ── Step 5: Upload landscape + portrait to YouTube ────────────────────
       - name: Random delay before upload (avoid robotic timing pattern)
