@@ -12,6 +12,7 @@ import json
 import os
 import sys
 import re
+import requests
 import chess
 import chess.pgn
 import io
@@ -66,6 +67,164 @@ def get_win_method(game_data):
     }
     return methods.get(result, "Resignation")
 
+# ── Game story (Claude API, optional) ────────────────────────────────────────
+# If ANTHROPIC_API_KEY is set, each game gets a real 2-3 sentence story of
+# how it unfolded (for the landscape description) plus a unique one-line
+# hook (for the Shorts description). Without a key the pipeline still works,
+# falling back to a factual story built from the PGN itself.
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL   = os.environ.get("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+
+def generate_game_summary(game_data, meta, my_rating, opp_name, opp_rating,
+                          win_method, move_count):
+    """Returns {'story': ..., 'shorts_hook': ...} or None on any failure."""
+    if not ANTHROPIC_API_KEY:
+        return None
+
+    side    = get_my_side(game_data)
+    opening = meta.get("opening") or "unknown opening"
+    pgn     = game_data.get("pgn", "")[:6000]
+
+    prompt = f"""You write YouTube descriptions for a beginner-friendly chess channel.
+The channel owner played {side.upper()} (username on that side of the PGN), rated {my_rating},
+against {opp_name} ({opp_rating}). Opening: {opening}. Result: won by {win_method}
+in {move_count} moves.
+
+PGN:
+{pgn}
+
+Respond ONLY with a JSON object, no markdown fences, in this exact shape:
+{{"story": "...", "shorts_hook": "..."}}
+
+- "story": 2-3 sentences in plain language for beginner/intermediate viewers
+  describing how THIS game actually unfolded: the opening plan, the turning
+  point or decisive mistake, and how the win was converted. Be specific to
+  the moves. No hashtags, no emoji.
+- "shorts_hook": one punchy sentence, under 18 words, teasing the finish of
+  this specific game. No hashtags, no emoji, no quotes."""
+
+    try:
+        r = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": ANTHROPIC_MODEL,
+                "max_tokens": 500,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=60,
+        )
+        r.raise_for_status()
+        text = "".join(b.get("text", "") for b in r.json().get("content", [])
+                       if b.get("type") == "text")
+        text = re.sub(r"```json|```", "", text).strip()
+        data = json.loads(text)
+        story = str(data.get("story", "")).strip()
+        hook  = str(data.get("shorts_hook", "")).strip().strip('"')
+        if story and hook:
+            return {"story": story, "shorts_hook": hook}
+    except Exception as e:
+        print(f"  ⚠️  Game summary via API failed, using fallback ({e})")
+    return None
+
+def basic_game_story(game_data, win_method, move_count):
+    """Factual 1-2 sentence story built from the PGN — used when no
+    ANTHROPIC_API_KEY is configured or the API call fails."""
+    pgn = game_data.get("pgn", "")
+    if not pgn:
+        return ""
+    game = chess.pgn.read_game(io.StringIO(pgn))
+    if not game:
+        return ""
+
+    board, captures, promoted, sans = game.board(), 0, False, []
+    try:
+        for mv in game.mainline_moves():
+            sans.append(board.san(mv))
+            if board.is_capture(mv):
+                captures += 1
+            if mv.promotion:
+                promoted = True
+            board.push(mv)
+    except Exception:
+        pass
+    if not sans:
+        return ""
+
+    style = ("A sharp, tactical game" if captures >= 14
+             else "A patient, positional game" if captures <= 6
+             else "A balanced fight")
+    parts = [f"{style} — {captures} captures over {move_count} moves."]
+    if promoted:
+        parts.append("A pawn made it all the way to promotion.")
+    last = sans[-1]
+    if last.endswith("#"):
+        piece = {"Q": "queen", "R": "rook", "B": "bishop",
+                 "N": "knight", "K": "king", "O": "rook"}.get(last[0], "pawn")
+        parts.append(f"The {piece} delivered the final checkmate.")
+    return " ".join(parts)
+
+
+ECO_NAMES = {
+    "A00": "Irregular Opening",   "A04": "Réti Opening",
+    "A10": "English Opening",     "A40": "Queen's Pawn Opening",
+    "A45": "Indian Defense",      "B00": "King's Pawn Opening",
+    "B01": "Scandinavian Defense","B06": "Modern Defense",
+    "B07": "Pirc Defense",        "B10": "Caro-Kann Defense",
+    "B20": "Sicilian Defense",    "C00": "French Defense",
+    "C20": "King's Pawn Game",    "C23": "Bishop's Opening",
+    "C25": "Vienna Game",         "C30": "King's Gambit",
+    "C40": "King's Knight Opening","C41": "Philidor Defense",
+    "C42": "Petrov's Defense",    "C44": "Scotch Game",
+    "C50": "Italian Game",        "C55": "Two Knights Defense",
+    "C60": "Ruy López",           "D00": "Queen's Pawn Game",
+    "D02": "London System",       "D06": "Queen's Gambit",
+    "D10": "Slav Defense",        "E00": "Indian Game",
+    "E20": "Nimzo-Indian Defense","E60": "King's Indian Defense",
+}
+
+def opening_from_ecourl(url):
+    """chess.com ECOUrl -> readable opening name.
+    'https://www.chess.com/openings/Caro-Kann-Defense-Exchange-Variation-4.Bd3'
+    -> 'Caro-Kann Defense Exchange Variation'"""
+    if not url or "/openings/" not in url:
+        return ""
+    slug  = url.rstrip("/").split("/")[-1]
+    words = []
+    for w in slug.split("-"):
+        if re.match(r"^\d", w):   # move-number suffix like '4.Bd3' — stop
+            break
+        words.append(w)
+    name = " ".join(words).strip()
+    # Restore possessives the slug loses: 'Queens Gambit' -> "Queen's Gambit"
+    # (but not plurals like 'Two Knights Defense' / 'Four Knights Game')
+    name = re.sub(r"(?<!Two )(?<!Four )(?<!Three )"
+                  r"\b(King|Queen|Bishop|Knight|Rook|Alekhine|Petrov|Philidor)s\b",
+                  r"\1's", name)
+    # Restore hyphens in names the slug flattens
+    for a, b in [("Caro Kann", "Caro-Kann"), ("Nimzo Indian", "Nimzo-Indian"),
+                 ("Semi Slav", "Semi-Slav"), ("Bogo Indian", "Bogo-Indian"),
+                 ("Semi Tarrasch", "Semi-Tarrasch")]:
+        name = name.replace(a, b)
+    return name
+
+def resolve_opening(headers, game_data):
+    """Best-effort opening name. chess.com often omits the [Opening] PGN
+    header, but almost always provides ECOUrl (in the PGN and as the
+    'eco' field of the game JSON)."""
+    opening = headers.get("Opening", "").strip()
+    if not opening:
+        opening = opening_from_ecourl(headers.get("ECOUrl", ""))
+    if not opening:
+        opening = opening_from_ecourl(game_data.get("eco", ""))
+    if not opening:
+        opening = ECO_NAMES.get(headers.get("ECO", ""), "")
+    return opening
+
 def parse_game(game_data):
     """Extract opening, move count, captures from PGN."""
     pgn  = game_data.get("pgn", "")
@@ -78,7 +237,7 @@ def parse_game(game_data):
 
     h = game.headers
     meta = {
-        "opening":   h.get("Opening", ""),
+        "opening":   resolve_opening(h, game_data),
         "eco":       h.get("ECO", ""),
         "time_ctrl": fmt_time_control(h.get("TimeControl", "")),
     }
@@ -112,7 +271,7 @@ def generate_title(game_data, meta, my_rating, opp_name, opp_rating, win_method,
 
     # Shorten long opening names
     if opening and len(opening) > 30:
-        opening = opening.split(":")[0].strip()  # e.g. "Sicilian Defense: Najdorf" -> "Sicilian Defense"
+        opening = shorten_opening(opening)  # "Sicilian Defense: Najdorf" -> "Sicilian Defense"
 
     opening_part = f"{opening} | " if opening else ""
 
@@ -128,7 +287,8 @@ def generate_title(game_data, meta, my_rating, opp_name, opp_rating, win_method,
     return title[:100]
 
 def generate_description(game_data, meta, my_rating, opp_name,
-                         opp_rating, win_method, move_count, date_str):
+                         opp_rating, win_method, move_count, date_str,
+                         story=""):
     """Generate YouTube description."""
     diff        = opp_rating - my_rating
     diff_str    = f"{abs(diff)} points {'higher' if diff > 0 else 'lower'} rated"
@@ -141,22 +301,28 @@ def generate_description(game_data, meta, my_rating, opp_name,
     my_side   = get_my_side(game_data)
     side_str  = "White" if my_side == "white" else "Black"
 
-    # Unique opening hook — varies by game context
+    # Unique opening hook — varies by game context. Only mention the
+    # opening when we actually identified one.
+    op_clause = f" {opening_str} — one of my favourite setups." if opening else ""
     if diff >= 150:
         hook = f"Took on a player {diff} points above me and won. Playing {side_str} in a {game_type.lower()} game on chess.com."
     elif diff <= -150:
         hook = f"A {game_type.lower()} win playing {side_str}. Opponent was {abs(diff)} points below me — but every win counts on the road to 1000."
     elif win_method == "Checkmate":
-        hook = f"Checkmate in {move_count} moves playing {side_str}. {opening_str} — one of my favourite setups."
+        hook = f"Checkmate in {move_count} moves playing {side_str}.{op_clause}"
     elif move_count <= 25:
-        hook = f"Quick {game_type.lower()} win in just {move_count} moves playing {side_str}. {opening_str}."
+        hook = f"Quick {game_type.lower()} win in just {move_count} moves playing {side_str}." + (f" {opening_str}." if opening else "")
     elif move_count >= 60:
-        hook = f"A long {move_count}-move battle playing {side_str}. {opening_str} — grindy but worth it."
+        hook = f"A long {move_count}-move battle playing {side_str}." + (f" {opening_str} — grindy but worth it." if opening else " Grindy but worth it.")
     else:
-        hook = f"A {game_type.lower()} game playing {side_str} with the {opening_str}. Won by {win_method} in {move_count} moves."
+        hook = (f"A {game_type.lower()} game playing {side_str} with the {opening_str}. Won by {win_method} in {move_count} moves."
+                if opening else
+                f"A {game_type.lower()} game playing {side_str}. Won by {win_method} in {move_count} moves.")
+
+    story_block = f"\nHow the game went:\n{story}\n" if story else ""
 
     desc = f"""{hook}
-
+{story_block}
 I am Abhishek — software developer, distance runner, and chess player who started at 42.
 Currently rated {my_rating} on chess.com.
 
@@ -246,11 +412,25 @@ def generate_hashtags(meta, my_rating, opp_rating, win_method, opening):
     # Music recommendation in script (not a hashtag)
     return " ".join(tags[:20])
 
+OPENING_FAMILY_WORDS = {"Defense", "Opening", "Game", "Gambit", "Attack", "System"}
+
+def shorten_opening(opening):
+    """'Caro-Kann Defense Exchange Variation' -> 'Caro-Kann Defense'.
+    Cuts at the opening-family word; also handles 'Family: Variation'."""
+    if not opening:
+        return ""
+    opening = opening.split(":")[0].strip()
+    words = opening.split()
+    for i, w in enumerate(words):
+        if w in OPENING_FAMILY_WORDS:
+            return " ".join(words[:i + 1])
+    return " ".join(words[:3])
+
 def opening_hashtag(opening):
     """'Caro-Kann Defense: Exchange Variation' -> '#carokanndefense'"""
     if not opening:
         return None
-    short = opening.split(":")[0].strip()
+    short = shorten_opening(opening)
     tag   = "#" + re.sub(r"[^a-z0-9]", "", short.lower())[:22]
     return tag if len(tag) > 3 else None
 
@@ -259,7 +439,7 @@ def generate_shorts_title(meta, my_rating, opp_name, opp_rating,
     """Short, punchy, game-specific title for the vertical (Shorts) video.
     Must be distinct from the landscape title or YouTube treats the pair
     as duplicate content."""
-    opening = (meta.get("opening") or "Chess").split(":")[0].strip()
+    opening = shorten_opening(meta.get("opening")) or "Chess"
     diff    = opp_rating - my_rating
 
     if diff >= 100:
@@ -277,18 +457,38 @@ def generate_shorts_title(meta, my_rating, opp_name, opp_rating,
     return templates[idx][:92]
 
 def generate_shorts_description(meta, my_rating, opp_name, opp_rating,
-                                win_method, move_count, date_str):
-    """Unique description for the Short — deliberately different wording
-    from the landscape description. step5 replaces [FULL_GAME_LINK] with
-    the real landscape URL after upload."""
-    opening = (meta.get("opening") or "this").split(":")[0].strip()
-    return f"""The final moves of my {opening} game against {opp_name} ({opp_rating}). Won by {win_method.lower()} in {move_count} moves — currently rated {my_rating} and climbing to 1000.
+                                win_method, move_count, date_str,
+                                game_data=None, shorts_hook="", story=""):
+    """Unique description for the Short. step5 replaces [FULL_GAME_LINK]
+    with the real landscape URL after upload. Kept short and game-specific
+    — no repeated channel bio (that lives on the landscape video)."""
+    game_data = game_data or {}
+    opening   = shorten_opening(meta.get("opening"))
+    game_ref  = f"{opening} game" if opening else "game"
 
-♟️ Watch the FULL game move by move: [FULL_GAME_LINK]
+    # First line: LLM-generated hook when available, otherwise game facts
+    hook = shorts_hook or \
+        f"The final moves of my {game_ref} against {opp_name} ({opp_rating})."
 
-Can you spot the turning point? Drop your move in the comments 👇
+    # Second line: what actually happened (story from API/PGN), else result
+    detail = story or \
+        f"Won by {win_method.lower()} in {move_count} moves — rated {my_rating}, climbing to 1000."
 
-I'm Abhishek — a 42-year-old developer learning chess in public, one game at a time."""
+    # Rotate the CTA so consecutive Shorts don't end identically
+    ctas = [
+        "Can you spot the turning point? Drop your move in the comments 👇",
+        "Would you have found this finish? Tell me in the comments 👇",
+        "Pause before the last move — can you find it? 👇",
+    ]
+    cta = ctas[(game_data.get("end_time", 0) + move_count) % len(ctas)]
+
+    return f"""{hook}
+
+{detail}
+
+♟️ Full game move by move: [FULL_GAME_LINK]
+
+{cta}"""
 
 def generate_shorts_hashtags(meta, my_rating, opp_rating, win_method, opening):
     """Tight hashtag set for Shorts. YouTube only surfaces the first 3
@@ -332,7 +532,8 @@ def get_music_suggestion(meta, move_count, win_method):
         return "🎵 Music suggestion: Search 'calm piano focus' in YouTube Audio Library"
 
 def save_script(game_dir, title, description, hashtags, game_data, meta,
-                my_rating, opp_name, opp_rating, win_method, move_count, date_str):
+                my_rating, opp_name, opp_rating, win_method, move_count, date_str,
+                story="", shorts_hook=""):
     """Save script.txt with all YouTube metadata."""
     side    = get_my_side(game_data)
     opening = meta.get("opening", "Unknown")
@@ -345,7 +546,10 @@ def save_script(game_dir, title, description, hashtags, game_data, meta,
     shorts_title    = generate_shorts_title(meta, my_rating, opp_name, opp_rating,
                                             win_method, move_count, game_data)
     shorts_desc     = generate_shorts_description(meta, my_rating, opp_name, opp_rating,
-                                                  win_method, move_count, date_str)
+                                                  win_method, move_count, date_str,
+                                                  game_data=game_data,
+                                                  shorts_hook=shorts_hook,
+                                                  story=story)
     shorts_hashtags = generate_shorts_hashtags(meta, my_rating, opp_rating,
                                                win_method, opening)
 
@@ -437,16 +641,26 @@ def main():
             win_method = get_win_method(gd)
             meta, move_count, captures = parse_game(gd)
 
+            # Per-game story: Claude API when key is set, PGN-derived
+            # factual fallback otherwise — makes every description unique.
+            summary     = generate_game_summary(gd, meta, my_rating, opp_name,
+                                                opp_rating, win_method, move_count)
+            story       = summary["story"] if summary else \
+                          basic_game_story(gd, win_method, move_count)
+            shorts_hook = summary["shorts_hook"] if summary else ""
+
             title       = generate_title(gd, meta, my_rating, opp_name,
                                          opp_rating, win_method, move_count)
             description = generate_description(gd, meta, my_rating, opp_name,
-                                               opp_rating, win_method, move_count, date_str)
+                                               opp_rating, win_method, move_count, date_str,
+                                               story=story)
             hashtags    = generate_hashtags(meta, my_rating, opp_rating,
                                             win_method, meta.get("opening",""))
             music_tip   = get_music_suggestion(meta, move_count, win_method)
 
             save_script(game_dir, title, description, hashtags, gd, meta,
-                        my_rating, opp_name, opp_rating, win_method, move_count, date_str)
+                        my_rating, opp_name, opp_rating, win_method, move_count, date_str,
+                        story=story, shorts_hook=shorts_hook)
 
             print(f"  ✅ Title: {title[:65]}")
             success += 1
