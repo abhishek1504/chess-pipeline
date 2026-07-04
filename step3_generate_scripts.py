@@ -555,6 +555,7 @@ def save_script(game_dir, title, description, hashtags, game_data, meta,
 
     content = f"""{"="*65}
 GAME: {game_data['white']['username']} vs {game_data['black']['username']}
+Game ID: {game_data.get('end_time', 0)}_{game_data['white']['username']}_vs_{game_data['black']['username']}
 Date: {date_str}  |  My Rating: {my_rating}  |  Opponent: {opp_rating}
 Opening: {opening} ({eco})  |  Won by: {win_method}  |  Moves: {move_count}
 {"="*65}

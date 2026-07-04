@@ -102,16 +102,29 @@ def main():
         except:
             uploaded_ids = set()
 
-    def game_folder_id(game, idx):
+    def stable_game_id(game):
+        """Order-independent id — same game always produces the same id,
+        unlike the old index-based folder name which shifted whenever the
+        day's game list grew or re-sorted (caused duplicate uploads)."""
         white = game["white"]["username"]
         black = game["black"]["username"]
-        return f"game_{idx:03d}_{white}_vs_{black}"
+        return f"{game.get('end_time', 0)}_{white}_vs_{black}"
+
+    def in_upload_log(game):
+        sid = stable_game_id(game)
+        if sid in uploaded_ids:
+            return True
+        # Legacy entries look like 'game_001_White_vs_Black' (index-based).
+        # Match them loosely by player pair — only entries with the old
+        # 'game_' prefix, so new-format ids never match a rematch by accident.
+        suffix = f"{game['white']['username']}_vs_{game['black']['username']}"
+        return any(e.startswith("game_") and e.endswith(suffix)
+                   for e in uploaded_ids)
 
     unduped  = []
     skipped  = 0
-    for i, g in enumerate(new_wins):
-        gid = game_folder_id(g, i+1)
-        if gid in uploaded_ids:
+    for g in new_wins:
+        if in_upload_log(g):
             skipped += 1
         else:
             unduped.append(g)
