@@ -20,15 +20,15 @@ games     videos    metadata  to YT
 | `backfill.py` | Fetches historical won games for a specific year/month |
 | `step1_fetch_games.py` | Fetches ALL 2026 won games (manual use) |
 | `step2_generate_video.py` | Generates landscape (full game) + portrait (last 20 moves) videos |
-| `step3_generate_scripts.py` | Generates YouTube title, description, hashtags |
-| `step5_upload_youtube.py` | Uploads both videos to YouTube, adds to playlists, cross-links |
+| `step3_generate_scripts.py` | Generates YouTube title, description, hashtags — real opening names (from ECOUrl), a unique per-game story (via Claude API if `ANTHROPIC_API_KEY` is set, else a factual PGN-derived fallback), and unique Shorts metadata per game |
+| `step5_upload_youtube.py` | Uploads both videos to YouTube, adds to playlists, cross-links, dedupes by stable game id (`{end_time}_{white}_vs_{black}`) |
 | `youtube_auth.py` | One-time YouTube authentication |
 | `sync_upload_log.py` | Syncs uploaded_games.json with existing YouTube videos |
 | `manage_youtube.py` | YouTube content manager (list, dupes, delete, delete_all) |
-| `uploaded_games.json` | Persistent log of uploaded games (committed to repo) |
+| `uploaded_games.json` | Persistent log of uploaded games, keyed by stable game id (committed to repo) |
 
 ### Quality filters (games must pass ALL to be uploaded)
-- Won by actual play (no abandonment/timeout)
+- Checkmate-only by default (`CHECKMATE_ONLY=true`) — wins by resignation, timeout, or abandonment are skipped. Set `CHECKMATE_ONLY=false` to accept any real win again.
 - Quality score >= 70 (proxy for ~70% chess.com accuracy)
   - Penalises hanging pieces, missing free captures
 
@@ -95,8 +95,9 @@ git push -u origin main
 ## Daily Use
 
 ### Automatic (GitHub Actions)
-- **11:00 PM IST** — daily pipeline (new wins from last 24h)
-- **11:30 PM IST** — backfill auto (historical wins, 6/day, oldest first)
+- **11:00 PM IST** — daily pipeline (new wins from last 24h, checkmate-only by default)
+- Backfill is no longer scheduled automatically (disabled to avoid duplicate uploads and bot detection) — run it manually, see below.
+- Daily upload cap is `MAX_UPLOADS=3` games (2 uploads each — landscape + portrait — at 1600 units, so 3 games = 9,600 of the default 10,000/day YouTube API quota). Raise it in `.github/workflows/chess_pipeline.yml` only after requesting a quota increase in Google Cloud Console.
 
 ### Manual local run
 ```bash
@@ -111,21 +112,16 @@ python step5_upload_youtube.py
 
 ## Backfill Historical Games
 
-### Option A — Auto (recommended)
-GitHub → Actions → **Chess Backfill Auto** → Run workflow
-```
-Year: 2026
-Max uploads: 6
-```
-Runs daily until all 2026 games are uploaded chronologically.
+Automated backfill workflows (`backfill_auto.yml`, `backfill_pipeline.yml`) are **disabled** in this repo to avoid duplicate uploads and YouTube bot detection. Run backfill manually instead:
 
-### Option B — Manual month by month
 ```bash
 python backfill.py 2026 01   # January
 python step2_generate_video.py
 python step3_generate_scripts.py
 python step5_upload_youtube.py
 ```
+
+To re-enable an automated workflow, go to GitHub → Actions → select the workflow → Run workflow, and type `ENABLE` in the confirm field.
 
 ---
 
