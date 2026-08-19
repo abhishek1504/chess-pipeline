@@ -48,6 +48,10 @@ PRIVACY_STATUS    = "private"    # "private" → review → change to "public" m
 CATEGORY_ID       = "20"        # Gaming
 DEFAULT_LANGUAGE  = "en"
 CHANNEL_NAME      = "Indian Thinking Athlete"
+# Fallback rating milestone (only used if script.txt is missing/unparseable —
+# step3_generate_scripts.py normally supplies real title/hashtags). Keep in
+# sync with NEXT_MILESTONE in step3_generate_scripts.py.
+NEXT_MILESTONE    = 1200
 # Max games to upload per run. Read from env (the workflow sets it);
 # 0 or unset = upload all. Note: each game = 2 YouTube uploads
 # (landscape + portrait) at 1600 quota units each — the default API
@@ -190,13 +194,13 @@ def parse_script(script_path):
 
     # Parse hashtags into tag list for YouTube tags field
     tag_list = re.findall(r'#(\w+)', hashtags)
-    for t in ["chess","chesscom","indianthinkingathlete","chessindia","learnchess","roadto1000"]:
+    for t in ["chess","chesscom","indianthinkingathlete","chessindia","learnchess",f"roadto{NEXT_MILESTONE}"]:
         if t.lower() not in [x.lower() for x in tag_list]:
             tag_list.append(t)
 
     # Separate tag list for Shorts (led by shorts/chessshorts)
     shorts_tag_list = re.findall(r'#(\w+)', shorts_hashtags)
-    for t in ["shorts","chessshorts","chess","chesscom","roadto1000"]:
+    for t in ["shorts","chessshorts","chess","chesscom",f"roadto{NEXT_MILESTONE}"]:
         if t.lower() not in [x.lower() for x in shorts_tag_list]:
             shorts_tag_list.append(t)
 
@@ -458,7 +462,7 @@ def main():
             metadata    = parse_script(script_path)
 
             if not metadata["title"]:
-                metadata["title"] = f"Chess Game — Road to 1000 | {CHANNEL_NAME}"
+                metadata["title"] = f"Chess Game — Road to {NEXT_MILESTONE} | {CHANNEL_NAME}"
 
             base_title = metadata["title"]
 
@@ -500,7 +504,7 @@ def main():
                     )
 
                 s_hashtags = metadata.get("shorts_hashtags") or \
-                    "#shorts #chessshorts #chess #chesscom #roadto1000 #thinkingathlete"
+                    f"#shorts #chessshorts #chess #chesscom #roadto{NEXT_MILESTONE} #thinkingathlete"
                 port_meta["description"] = f"{s_desc}\n\n{s_hashtags}"[:4900]
 
                 # ── Shorts-specific YouTube tags ──────────────────────

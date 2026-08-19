@@ -23,6 +23,8 @@ import time
 # ── Config — fill these in ────────────────────────────────────────────────────
 ACCESS_TOKEN         = "YOUR_INSTAGRAM_ACCESS_TOKEN"    # from Facebook Developer Console
 INSTAGRAM_ACCOUNT_ID = "YOUR_INSTAGRAM_ACCOUNT_ID"      # numeric ID from Graph API
+# Keep in sync with NEXT_MILESTONE in step3_generate_scripts.py
+NEXT_MILESTONE       = 1200
 # ─────────────────────────────────────────────────────────────────────────────
 
 BASE_URL = f"https://graph.facebook.com/v19.0/{INSTAGRAM_ACCOUNT_ID}"
@@ -47,22 +49,22 @@ def build_caption(game_data):
 I won. I have no idea how. The chess.com analysis will tell me I got lucky.
 It is correct.
 
-Road to 1000. Still going. ♟️
+Road to {NEXT_MILESTONE}. Still going. ♟️
 
 💬 Spot my almost-blunder in the comments.
 🔴 Full streams on YouTube — link in bio.
 
-#chess #chesscom #roadto1000 #chesswin #chessindia #learnchess
+#chess #chesscom #roadto{NEXT_MILESTONE} #chesswin #chessindia #learnchess
 #thinkingathlete #chessvideo #chesspuzzle #chessbeginner"""
     else:
-        caption = f"""Another win. Another step toward 1000.
+        caption = f"""Another win. Another step toward {NEXT_MILESTONE}.
 
 Rated {my_rating} on chess.com.
 Not fast. Not pretty. But it counts. ♟️
 
 🔴 Full streams on YouTube — link in bio.
 
-#chess #chesscom #roadto1000 #chesswin #chessindia #learnchess
+#chess #chesscom #roadto{NEXT_MILESTONE} #chesswin #chessindia #learnchess
 #thinkingathlete #chessvideo #chessbeginner #chessgrind"""
 
     return caption

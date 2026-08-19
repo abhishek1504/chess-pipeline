@@ -79,11 +79,13 @@ def build_metadata(game_data):
     rating_diff = opp_rating - my_rating
     date_str    = datetime.now().strftime("%B %Y")
 
+    NEXT_MILESTONE = 1200  # keep in sync with step3_generate_scripts.py
+
     if rating_diff > 0:
-        title = f"I Beat Someone Rated Higher Than Me ({opp_rating} vs {my_rating}) | Road to 1000 ♟️"
+        title = f"I Beat Someone Rated Higher Than Me ({opp_rating} vs {my_rating}) | Road to {NEXT_MILESTONE} ♟️"
         hook  = f"I am rated {my_rating}. My opponent was rated {opp_rating}.\nI won. I have no idea how. Let's review."
     else:
-        title = f"Another Win on the Road to 1000 | {my_rating} Rated | {date_str} ♟️"
+        title = f"Another Win on the Road to {NEXT_MILESTONE} | {my_rating} Rated | {date_str} ♟️"
         hook  = f"Rated {my_rating} on chess.com. Slowly climbing. One game at a time."
 
     description = f"""{hook}
@@ -99,14 +101,14 @@ Next stream I'll add live commentary — subscribe so you don't miss it.
 ─────────────────────────
 🏃 The Thinking Athlete
 A 42-year-old developer climbing the chess.com ladder.
-Road to 1000. Then 1200. One blunder at a time.
+Road to {NEXT_MILESTONE}. One blunder at a time.
 ─────────────────────────
 
-#chess #chesscom #roadto1000 #chessgame #chessreplay
+#chess #chesscom #roadto{NEXT_MILESTONE} #chessgame #chessreplay
 #chessindia #learnchess #thinkingathlete #chessvideo #chesswin
 """
     tags = [
-        "chess", "chess.com", "road to 1000", "chess replay",
+        "chess", "chess.com", f"road to {NEXT_MILESTONE}", "chess replay",
         "chess india", "learn chess", "the thinking athlete",
         "chess beginner", "chess win", "chess game analysis"
     ]

@@ -166,3 +166,22 @@ Edit `MIN_QUALITY` in `backfill.py` and `step1_fetch_games.py`:
 ```python
 MIN_QUALITY = 70   # 70 = strict, 60 = lenient, 50 = very lenient
 ```
+
+---
+
+## Updating the Rating Milestone
+Titles, descriptions, hashtags, and captions reference a "Road to X" rating
+milestone. When you hit the current target, bump it in one place:
+
+```python
+# step3_generate_scripts.py
+PREV_MILESTONE = 1000   # milestone just reached
+NEXT_MILESTONE = 1200   # new target
+```
+
+`step5_upload_youtube.py`, `step4_post_instagram.py`, and
+`step3_upload_youtube.py` each keep their own `NEXT_MILESTONE` constant
+(used only as a fallback if `script.txt` is missing/unparseable) — update
+those to match. Milestone history:
+- 800 → 1000 (reached 2026-07-18)
+- 1000 → 1200 (current target)

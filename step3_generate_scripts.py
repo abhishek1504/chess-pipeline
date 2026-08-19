@@ -26,6 +26,13 @@ CHANNEL     = "Indian Thinking Athlete"
 CHANNEL_URL = "@indianthinkingathlete"
 EMAIL       = "thinkingathleteindia@gmail.com"
 INSTAGRAM   = "@indianthinkingathlete"
+
+# Rating milestone referenced in titles, descriptions, hashtags and captions.
+# Update PREV_MILESTONE/NEXT_MILESTONE whenever a milestone is reached so new
+# content stops referencing a goal that's already been hit.
+# History: 800 -> 1000 (reached 2026-07-18) -> 1200 (current target)
+PREV_MILESTONE = 1000
+NEXT_MILESTONE = 1200
 MONTH_NAMES = {
     1:"01_January", 2:"02_February", 3:"03_March", 4:"04_April",
     5:"05_May",     6:"06_June",     7:"07_July",  8:"08_August",
@@ -282,7 +289,7 @@ def generate_title(game_data, meta, my_rating, opp_name, opp_rating, win_method,
     elif move_count <= 20:
         title = f"{opening_part}{game_type} | Won in {move_count} Moves | {my_rating} ♟️"
     else:
-        title = f"{opening_part}{game_type} | {win_method} | Rated {my_rating} | Road to 1000 ♟️"
+        title = f"{opening_part}{game_type} | {win_method} | Rated {my_rating} | Road to {NEXT_MILESTONE} ♟️"
 
     return title[:100]
 
@@ -307,7 +314,7 @@ def generate_description(game_data, meta, my_rating, opp_name,
     if diff >= 150:
         hook = f"Took on a player {diff} points above me and won. Playing {side_str} in a {game_type.lower()} game on chess.com."
     elif diff <= -150:
-        hook = f"A {game_type.lower()} win playing {side_str}. Opponent was {abs(diff)} points below me — but every win counts on the road to 1000."
+        hook = f"A {game_type.lower()} win playing {side_str}. Opponent was {abs(diff)} points below me — but every win counts on the road to {NEXT_MILESTONE}."
     elif win_method == "Checkmate":
         hook = f"Checkmate in {move_count} moves playing {side_str}.{op_clause}"
     elif move_count <= 25:
@@ -338,7 +345,7 @@ Every game on this channel is real — wins, losses, blunders and everything in 
 Not a GM. Not a professional coach. Just a 42-year-old getting better at chess in public and documenting every step.
 
 If you are a beginner or intermediate player trying to improve, this channel is for you.
-Subscribe and follow the journey from 800 to 1000 and beyond.
+Subscribe and follow the journey from {PREV_MILESTONE} to {NEXT_MILESTONE} and beyond.
 
 {CHANNEL_URL} | chess.com: {USERNAME}
 Email: thinkingathleteindia@gmail.com
@@ -402,9 +409,9 @@ def generate_hashtags(meta, my_rating, opp_rating, win_method, opening):
         tags.append("#resignation")
 
     # Rating journey — community hashtags with good reach
-    tags += ["#roadto1000", "#chessimprovement", "#chessbeginners"]
-    if my_rating < 1000:
-        tags += ["#under1000", "#800rating"]
+    tags += [f"#roadto{NEXT_MILESTONE}", "#chessimprovement", "#chessbeginners"]
+    if my_rating < NEXT_MILESTONE:
+        tags += [f"#under{NEXT_MILESTONE}", f"#{PREV_MILESTONE}rating"]
 
     # Brand
     tags += ["#indianthinkingathlete", "#thinkingathlete"]
@@ -472,7 +479,7 @@ def generate_shorts_description(meta, my_rating, opp_name, opp_rating,
 
     # Second line: what actually happened (story from API/PGN), else result
     detail = story or \
-        f"Won by {win_method.lower()} in {move_count} moves — rated {my_rating}, climbing to 1000."
+        f"Won by {win_method.lower()} in {move_count} moves — rated {my_rating}, climbing to {NEXT_MILESTONE}."
 
     # Rotate the CTA so consecutive Shorts don't end identically
     ctas = [
@@ -511,7 +518,7 @@ def generate_shorts_hashtags(meta, my_rating, opp_rating, win_method, opening):
     if win_method == "Checkmate":
         tags.append("#checkmate")
 
-    tags += ["#chesscom", "#roadto1000", "#chessindia", "#thinkingathlete"]
+    tags += ["#chesscom", f"#roadto{NEXT_MILESTONE}", "#chessindia", "#thinkingathlete"]
 
     # De-duplicate, preserve order
     seen, out = set(), []
@@ -590,7 +597,7 @@ Opening: {opening} ({eco})  |  Won by: {win_method}  |  Moves: {move_count}
 {"─"*40}
 Rated {my_rating} on chess.com. Played the {opening or 'game'} today.
 Won by {win_method.lower()} in {move_count} moves vs {opp_name} ({opp_rating}).
-Road to 1000 — one game at a time. ♟️
+Road to {NEXT_MILESTONE} — one game at a time. ♟️
 
 What would you have played differently? Drop it in the comments 👇
 
