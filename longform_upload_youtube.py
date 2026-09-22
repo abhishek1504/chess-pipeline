@@ -198,8 +198,63 @@ def main():
         print(f"❌ {video_path} not found — run longform_generate_video.py first!")
         sys.exit(1)
     if not os.path.exists(script_path):
-        print(f"❌ {script_path} not found — run longform_generate_script.py first!")
-        sys.exit(1)
+        print("📝 script.txt not found — generating it now...")
+        import longform_generate_script as lgs
+        lgs.NEXT_MILESTONE = NEXT_MILESTONE
+        summary_path  = os.path.join(out_dir, "compilation_summary.json")
+        chapters_path = os.path.join(out_dir, "chapters.txt")
+        if not os.path.exists(summary_path):
+            print(f"❌ {summary_path} not found — run longform_generate_video.py first!")
+            sys.exit(1)
+        with open(summary_path) as f:
+            summary = __import__("json").load(f)
+        chapters_text = open(chapters_path).read() if os.path.exists(chapters_path) else ""
+        games_info     = summary["games"]
+        total_games    = summary["total_games"]
+        total_secs     = summary["total_seconds"]
+        avg_rating     = (sum(g["my_rating"] for g in games_info) // len(games_info)
+                          if games_info else 0)
+        has_brilliants = any(g.get("has_brilliant") for g in games_info)
+        title     = lgs.generate_title(year, month, total_games, avg_rating, has_brilliants)
+        desc      = lgs.generate_description(year, month, games_info, chapters_text,
+                                             total_secs, has_brilliants)
+        hashtags  = lgs.generate_hashtags(year, month, games_info)
+        tags_list = lgs.generate_tags_list(year, month, games_info)
+        thumbnail = lgs.generate_thumbnail_copy(year, month, total_games, avg_rating)
+        month_str_label = __import__("datetime").datetime(year, month, 1).strftime("%B %Y")
+        content = f"""{'='*68}
+MONTHLY COMPILATION: {month_str_label}
+Games: {total_games}  |  Duration: {total_secs//60}m {total_secs%60}s  |  Avg rating: {avg_rating}
+Video: {summary.get('video_path', 'compilation.mp4')}
+{'='*68}
+
+🎬 YOUTUBE TITLE
+{'─'*50}
+{title}
+
+📋 YOUTUBE DESCRIPTION  (copy everything below the line)
+{'─'*50}
+{desc}
+
+#️⃣  HASHTAGS  (add at end of description)
+{'─'*50}
+{hashtags}
+
+🏷️  YOUTUBE TAGS  (paste into Tags field in Studio)
+{'─'*50}
+{tags_list}
+
+🖼️  THUMBNAIL COPY
+{'─'*50}
+{thumbnail}
+
+📌 CHAPTERS  (already included in description above)
+{'─'*50}
+{chapters_text}
+"""
+        with open(script_path, "w") as f:
+            f.write(content)
+        print(f"✅ script.txt generated: {script_path}")
 
     # Skip if already uploaded
     if os.path.exists(upload_json):
