@@ -86,24 +86,33 @@ def get_youtube_client():
 
 def parse_script(script_path):
     content = open(script_path, encoding="utf-8").read()
+    lines   = content.split("\n")
+
+    def is_section_sep(line):
+        s = line.strip()
+        return bool(s) and all(c in "─-=" for c in s) and len(s) >= 40
 
     def extract(header):
-        lines   = content.split("\n")
-        capture = False
-        result  = []
-        for line in lines:
+        start = None
+        for i, line in enumerate(lines):
             if header.lower() in line.lower():
-                capture = True
-                continue
-            if capture:
-                s = line.strip()
-                if s and set(s) <= {"─", "-", "="}:
-                    if result:
+                for j in range(i + 1, min(i + 5, len(lines))):
+                    if is_section_sep(lines[j]):
+                        start = j + 1
                         break
-                    continue
-                if any(e in line for e in ["🎬","📋","#️⃣","🖼️","📌","="*10]):
-                    break
-                result.append(line)
+                break
+        if start is None:
+            return ""
+        result = []
+        for i in range(start, len(lines)):
+            if is_section_sep(lines[i]):
+                # strip trailing blank lines, then strip the preceding header line
+                while result and not result[-1].strip():
+                    result.pop()
+                if result:
+                    result.pop()
+                break
+            result.append(lines[i])
         return "\n".join(result).strip()
 
     title    = extract("YOUTUBE TITLE").strip('"').strip("'")
