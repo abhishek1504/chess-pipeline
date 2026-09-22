@@ -1,0 +1,65 @@
+[
+  {
+    "name": "intro",
+    "ply": null,
+    "file": "intro.mp3",
+    "duration": 10.54,
+    "text": "This one's against ChiefRockka — a scrappy game where both of us made some big mistakes, but I managed to hold on and find the checkmate."
+  },
+  {
+    "name": "ply_006",
+    "ply": 6,
+    "file": "ply_006.mp3",
+    "duration": 13.39,
+    "text": "My opponent plays bishop takes f2, check — a piece sacrifice on move three. Looks scary, but the engine says it's a blunder. I just need to stay calm."
+  },
+  {
+    "name": "ply_016",
+    "ply": 16,
+    "file": "ply_016.mp3",
+    "duration": 11.86,
+    "text": "Here my opponent plays c6, locking the knight in. The engine wanted the knight to develop instead — small decisions like this quietly hurt your position."
+  },
+  {
+    "name": "ply_021",
+    "ply": 21,
+    "file": "ply_021.mp3",
+    "duration": 14.9,
+    "text": "And here I go and blunder it right back. I play bishop takes f7, check — felt clever, but the engine wanted queen to d3. I got greedy. Plain and simple."
+  },
+  {
+    "name": "ply_024",
+    "ply": 24,
+    "file": "ply_024.mp3",
+    "duration": 12.86,
+    "text": "My opponent moves the king to e8 when bishop to e6 was the tougher defence. Sometimes your opponent bails you out — I'll take it, but I won't pretend I earned it."
+  },
+  {
+    "name": "ply_031",
+    "ply": 31,
+    "file": "ply_031.mp3",
+    "duration": 14.64,
+    "text": "I play queen to e6, check — and this is a five-pawn swing against me. Rook takes d6 was the clean kill. I was rushing, like sprinting too early in a race and burning out."
+  },
+  {
+    "name": "ply_036",
+    "ply": 36,
+    "file": "ply_036.mp3",
+    "duration": 12.72,
+    "text": "King to e8 again — my opponent keeps moving toward the centre instead of away. King to e6 would have made my life much harder. I'm getting lucky here."
+  },
+  {
+    "name": "ply_049",
+    "ply": 49,
+    "file": "ply_049.mp3",
+    "duration": 10.58,
+    "text": "Rook to d6 — checkmate. The engine agrees, that's the best move. Feels good to land it cleanly after all that chaos."
+  },
+  {
+    "name": "outro",
+    "ply": null,
+    "file": "outro.mp3",
+    "duration": 15.5,
+    "text": "The lesson today: I blundered twice and still won because my opponent blundered more. At our level, staying in the game matters. If this felt relatable, hit subscribe — we're climbing together."
+  }
+]

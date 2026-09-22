@@ -1,0 +1,34 @@
+{
+  "intro": "This one's against ChiefRockka — a scrappy game where both of us made some big mistakes, but I managed to hold on and find the checkmate.",
+  "lines": [
+    {
+      "ply": 6,
+      "text": "My opponent plays bishop takes f2, check — a piece sacrifice on move three. Looks scary, but the engine says it's a blunder. I just need to stay calm."
+    },
+    {
+      "ply": 16,
+      "text": "Here my opponent plays c6, locking the knight in. The engine wanted the knight to develop instead — small decisions like this quietly hurt your position."
+    },
+    {
+      "ply": 21,
+      "text": "And here I go and blunder it right back. I play bishop takes f7, check — felt clever, but the engine wanted queen to d3. I got greedy. Plain and simple."
+    },
+    {
+      "ply": 24,
+      "text": "My opponent moves the king to e8 when bishop to e6 was the tougher defence. Sometimes your opponent bails you out — I'll take it, but I won't pretend I earned it."
+    },
+    {
+      "ply": 31,
+      "text": "I play queen to e6, check — and this is a five-pawn swing against me. Rook takes d6 was the clean kill. I was rushing, like sprinting too early in a race and burning out."
+    },
+    {
+      "ply": 36,
+      "text": "King to e8 again — my opponent keeps moving toward the centre instead of away. King to e6 would have made my life much harder. I'm getting lucky here."
+    },
+    {
+      "ply": 49,
+      "text": "Rook to d6 — checkmate. The engine agrees, that's the best move. Feels good to land it cleanly after all that chaos."
+    }
+  ],
+  "outro": "The lesson today: I blundered twice and still won because my opponent blundered more. At our level, staying in the game matters. If this felt relatable, hit subscribe — we're climbing together."
+}
