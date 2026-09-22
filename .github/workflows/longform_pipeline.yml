@@ -1,0 +1,181 @@
+name: Long-Form Monthly Compilation
+
+# Manually triggered — pick any month from January 2026 onwards.
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: 'Year'
+        required: true
+        default: '2026'
+        type: choice
+        options: ['2026', '2027', '2028']
+      month:
+        description: 'Month (1 = January … 12 = December)'
+        required: true
+        default: '1'
+        type: choice
+        options: ['1','2','3','4','5','6','7','8','9','10','11','12']
+      checkmate_only:
+        description: 'Checkmate wins only? (default: include all wins)'
+        required: false
+        default: 'false'
+        type: boolean
+      skip_stockfish:
+        description: 'Skip Stockfish analysis (faster, no move annotations)?'
+        required: false
+        default: 'false'
+        type: boolean
+      min_accuracy:
+        description: 'Minimum my accuracy % to include a game (default 80)'
+        required: false
+        default: '80'
+        type: string
+      max_games:
+        description: 'Max games in compilation (0 = all)'
+        required: false
+        default: '50'
+        type: string
+      upload_to_youtube:
+        description: 'Upload to YouTube after generating?'
+        required: false
+        default: 'true'
+        type: boolean
+
+concurrency:
+  group: longform-pipeline
+  cancel-in-progress: false
+
+jobs:
+  generate-and-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240      # long-form can take ~1-2 hrs for a full month
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y ffmpeg fonts-dejavu
+          # Stockfish for move annotations (optional but highly recommended)
+          if [ "${{ inputs.skip_stockfish }}" != "true" ]; then
+            sudo apt-get install -y stockfish
+            echo "✅ Stockfish installed: $(stockfish --version 2>/dev/null | head -1 || echo 'ok')"
+          fi
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      # ── Step 1: Fetch all wins for the selected month ────────────────────────
+      - name: Fetch monthly wins
+        run: python longform_fetch_month.py --year ${{ inputs.year }} --month ${{ inputs.month }}
+        env:
+          YEAR:           ${{ inputs.year }}
+          MONTH:          ${{ inputs.month }}
+          CHECKMATE_ONLY: ${{ inputs.checkmate_only }}
+          MIN_ACCURACY:   ${{ inputs.min_accuracy }}
+          MAX_GAMES:      ${{ inputs.max_games }}
+
+      - name: Check for wins
+        id: check
+        run: |
+          COUNT=$(python -c 'import json; d=json.load(open("monthly_wins.json")); print(len(d))')
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          if [ "$COUNT" -gt "0" ]; then
+            echo "has_games=true" >> $GITHUB_OUTPUT
+            echo "✅ $COUNT wins found for ${{ inputs.year }}/${{ inputs.month }}"
+          else
+            echo "has_games=false" >> $GITHUB_OUTPUT
+            echo "😴 No wins found — pipeline stops here."
+          fi
+
+      # ── Step 2a: Download background music (Jamendo API) ────────────────────
+      # Needs JAMENDO_CLIENT_ID secret (free — https://devportal.jamendo.com/)
+      # Safe to skip: pipeline generates silent-then-move-sounds video if this fails.
+      - name: Download background music
+        if: steps.check.outputs.has_games == 'true'
+        run: python download_bg_music.py
+        env:
+          JAMENDO_CLIENT_ID: ${{ secrets.JAMENDO_CLIENT_ID }}
+        continue-on-error: true   # music is nice-to-have, not required
+
+      # ── Step 2b: Generate compilation video ─────────────────────────────────
+      - name: Generate compilation video
+        if: steps.check.outputs.has_games == 'true'
+        run: |
+          EXTRA=""
+          if [ "${{ inputs.skip_stockfish }}" == "true" ]; then
+            EXTRA="$EXTRA --no-stockfish"
+          fi
+          if [ "${{ inputs.max_games }}" != "0" ] && [ -n "${{ inputs.max_games }}" ]; then
+            EXTRA="$EXTRA --max-games ${{ inputs.max_games }}"
+          fi
+          python longform_generate_video.py \
+            --year ${{ inputs.year }} \
+            --month ${{ inputs.month }} \
+            $EXTRA
+        env:
+          YEAR:      ${{ inputs.year }}
+          MONTH:     ${{ inputs.month }}
+          SF_THINK:  "0.05"
+          MAX_GAMES: ${{ inputs.max_games }}
+
+      # ── Step 3: Generate YouTube metadata ───────────────────────────────────
+      - name: Generate script and metadata
+        if: steps.check.outputs.has_games == 'true'
+        run: |
+          python longform_generate_script.py \
+            --year ${{ inputs.year }} \
+            --month ${{ inputs.month }}
+        env:
+          YEAR:           ${{ inputs.year }}
+          MONTH:          ${{ inputs.month }}
+          NEXT_MILESTONE: "1200"
+
+      # ── Step 4: Upload to YouTube ────────────────────────────────────────────
+      - name: Upload to YouTube
+        if: |
+          steps.check.outputs.has_games == 'true' &&
+          inputs.upload_to_youtube == 'true'
+        run: |
+          python longform_upload_youtube.py \
+            --year ${{ inputs.year }} \
+            --month ${{ inputs.month }}
+        env:
+          YEAR:          ${{ inputs.year }}
+          MONTH:         ${{ inputs.month }}
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+
+      # ── Summary ───────────────────────────────────────────────────────────────
+      - name: Summary
+        if: steps.check.outputs.has_games == 'true'
+        run: |
+          YEAR=${{ inputs.year }}
+          MONTH=$(printf "%02d" ${{ inputs.month }})
+          echo "🏁 Long-form pipeline complete for $YEAR-$MONTH"
+          VIDEO=$(find longform/ -name 'compilation.mp4' 2>/dev/null | head -1)
+          if [ -n "$VIDEO" ]; then
+            SIZE=$(du -sh "$VIDEO" | cut -f1)
+            echo "📦 Video: $VIDEO ($SIZE)"
+          fi
+          SCRIPT=$(find longform/ -name 'script.txt' 2>/dev/null | head -1)
+          if [ -n "$SCRIPT" ]; then
+            echo "📝 Script: $SCRIPT"
+            echo ""
+            echo "── Title ───────────────────────────────────"
+            grep -A1 "YOUTUBE TITLE" "$SCRIPT" | tail -1 || true
+          fi
+          UPLOAD=$(find longform/ -name 'youtube_upload.json' 2>/dev/null | head -1)
+          if [ -n "$UPLOAD" ]; then
+            echo ""
+            echo "── YouTube URL ─────────────────────────────"
+            python -c "import json; d=json.load(open('$UPLOAD')); print(d.get('url',''))" || true
+          fi

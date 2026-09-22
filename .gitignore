@@ -5,6 +5,11 @@ won_games.json
 videos/
 scripts/
 sounds/track.aac
+sounds/longform_bg.mp3
+sounds/longform_track.aac
+sounds/longform_track.wav
+monthly_wins.json
+longform/
 __pycache__/
 *.pyc
 .env

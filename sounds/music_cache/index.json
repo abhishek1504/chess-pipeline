@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Reverse Bhangra (new demo, tape manipulated)",
+    "artist": "Lame Drivers",
+    "path": "sounds/music_cache/Lame_Drivers_Reverse_Bhangra_(new_demo,_tape_manipulated).mp3",
+    "query": "bhangra",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/3.0/"
+  },
+  {
+    "name": "Bhangratechno1 jalamiyaa",
+    "artist": "Climetree",
+    "path": "sounds/music_cache/Climetree_Bhangratechno1_jalamiyaa.mp3",
+    "query": "bhangra",
+    "license": "http://creativecommons.org/licenses/by-nc-nd/3.0/"
+  },
+  {
+    "name": "Beauty & The Beats",
+    "artist": "Neon NiteClub",
+    "path": "sounds/music_cache/Neon_NiteClub_Beauty_&_The_Beats.mp3",
+    "query": "dhol beats",
+    "license": "http://creativecommons.org/licenses/by-sa/3.0/"
+  }
+]
