@@ -142,9 +142,7 @@ jobs:
 
       # ── Step 4: Upload to YouTube ────────────────────────────────────────────
       - name: Upload to YouTube
-        if: |
-          steps.check.outputs.has_games == 'true' &&
-          inputs.upload_to_youtube == 'true'
+        if: steps.check.outputs.has_games == 'true' && fromJSON(inputs.upload_to_youtube)
         run: |
           python longform_upload_youtube.py \
             --year ${{ inputs.year }} \
