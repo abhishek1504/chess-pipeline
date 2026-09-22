@@ -9,7 +9,7 @@ on:
         required: true
         default: '2026'
         type: choice
-        options: ['2026', '2027', '2028']
+        options: ['2026', '2025', '2027', '2028']
       month:
         description: 'Month (1 = January … 12 = December)'
         required: true
