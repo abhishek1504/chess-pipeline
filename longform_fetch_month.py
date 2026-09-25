@@ -60,9 +60,7 @@ def is_real_win(game, min_accuracy):
         return False, f"not_checkmate({opp_result})"
 
     acc = my_accuracy(game)
-    if acc is None:
-        return False, "no_accuracy_data"
-    if acc < min_accuracy:
+    if acc is not None and acc < min_accuracy:
         return False, f"low_accuracy({acc:.1f}%)"
 
     return True, "ok"
